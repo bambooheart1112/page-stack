@@ -667,9 +667,35 @@ function addOne(inputUrl){
       }
     }
 
+    /* 20 秒还没 onload：给一句人话提示，别让人干等 */
+    setTimeout(function(){
+      if (loadTimer) {
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '这个页面 20 秒还没加载完（图片多/服务器慢）。内容会一张张自己出来，' +
+          '先把「高」加到能看见内容的位置，或点「新窗口」对照原页';
+      }
+    }, 20000);
+
     frame.onload = function(){
       finishLoading();
       var doc = sameOriginDoc(frame);
+      var loadMs = Date.now() - loadStart;
+
+      /* 0 秒级 onload + 读不到文档 = 这个地址根本没内容回来：
+         要么被网站禁止嵌入（X-Frame-Options / CSP），要么域名/网络不通。
+         实测：被拒的站 0.02 秒就触发 onload，正常图片站要 7~30 秒。 */
+      if (!doc && loadMs < 600) {
+        st.cross = true;
+        repaint();
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '⚠️ 这个地址 ' + (loadMs / 1000).toFixed(2) + ' 秒就返回空内容 —— ' +
+          '通常是①网站禁止被 iframe 嵌入（X-Frame-Options / CSP）②域名或网络打不开。' +
+          '点顶部「新窗口」：能打开=被禁止嵌入（只能截图后走图片模式）；打不开=网址或网络问题';
+        if (btnMeasure) btnMeasure.style.display = 'none';
+        btnMgr.style.display = 'none';
+        btnSmart.style.display = 'none';
+        return;
+      }
       if (doc) {
         st.cross = false;
         /* 同源：自动把 iframe 撑成整页高度，去掉内部滚动条，页与页之间直接接续 */
