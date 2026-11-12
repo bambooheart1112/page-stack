@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>网页堆叠器</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+body{padding:12px;background:#f4f4f4}
+
+/* 控制面板 */
+#panel{background:#fff;padding:14px;border-radius:10px;margin-bottom:14px}
+#panel.collapsed{display:none}
+#panelTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#panelTop h3{font-size:17px}
+#n{background:#2563eb;color:#fff;border-radius:10px;padding:2px 10px;font-size:13px}
+#u{width:100%;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:8px;margin:8px 0;line-height:1.4;resize:vertical}
+button{width:100%;padding:13px;font-size:16px;border:0;border-radius:8px;color:#fff;margin:6px 0;font-weight:bold}
+#btnFold,#foldBall{width:auto}
+#btnFold{padding:6px 12px;font-size:13px;background:#6b7280;margin:0;font-weight:normal}
+#add{background:#2563eb}
+#showAll{background:#6b7280;font-size:14px;font-weight:normal}
+#clr{background:#dc2626;font-size:14px;font-weight:normal}
+.hint{font-size:12px;color:#666;margin-top:8px;line-height:1.5}
+
+/* 收起后的小圆钮 */
+#foldBall{position:fixed;right:14px;bottom:14px;width:50px;height:50px;border-radius:50%;
+  background:#2563eb;color:#fff;font-size:22px;line-height:50px;text-align:center;
+  box-shadow:0 3px 10px rgba(37,99,235,.45);z-index:99999;display:none;font-weight:normal}
+#foldBall.on{display:block}
+
+/* 堆叠条目 */
+.item{background:#fff;border:2px solid #2563eb;border-radius:8px;margin:10px 0;overflow:hidden}
+.bar{background:#dbeafe;padding:8px 10px;font-size:12px;display:flex;align-items:center;gap:6px}
+.bar b{color:#2563eb;flex-shrink:0}
+.bar .url{flex:1;word-break:break-all;color:#555;overflow:hidden}
+.bar button{width:auto;padding:5px 9px;font-size:12px;margin:0;flex-shrink:0;font-weight:normal;border-radius:4px}
+.b-hide{background:#6b7280}
+.b-del{background:#dc2626}
+.body{overflow:hidden}
+.body.off{display:none}
+iframe{width:100%;height:800px;border:0;display:block;background:#fff}
+.picbox{padding:8px;background:#fff;text-align:center}
+.picbox img{max-width:100%;display:block;margin:0 auto;border-radius:4px}
+.picbar{padding:7px 10px;background:#f1f5f9;font-size:12px;color:#555;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.picbar button{width:auto;padding:5px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:4px;background:#dc2626;flex-shrink:0}
+.loading{padding:10px;font-size:13px;color:#2563eb}
+.tipbar{padding:6px 10px;font-size:12px;color:#92400e;background:#fef3c7;display:none;line-height:1.5;align-items:center;gap:8px}
+.tipbar.on{display:flex}
+.tipbar button{width:auto;padding:4px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:4px;background:#2563eb;flex-shrink:0}
+.tipbar span{flex:1}
+
+/* 图片管理浮层 */
+#imgMgr{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:99998;display:none}
+#imgMgr.on{display:block}
+#imgMgrBox{position:absolute;left:10px;right:10px;top:60px;bottom:20px;background:#fff;border-radius:10px;overflow:auto;padding:10px}
+#imgMgrTop{position:absolute;left:10px;right:10px;top:14px;height:36px;display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:14px}
+#imgMgrTop button{width:auto;padding:6px 14px;font-size:13px;background:#dc2626;margin:0;font-weight:normal;border-radius:6px}
+.row{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #eee}
+.row img{width:70px;height:70px;object-fit:cover;border-radius:4px;flex-shrink:0;background:#f3f4f6}
+.row .src{flex:1;font-size:11px;color:#666;word-break:break-all;max-height:70px;overflow:hidden}
+.row button{width:auto;padding:6px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:4px;background:#dc2626;flex-shrink:0}
+.row.gone{opacity:.4}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div id="panelTop">
+    <h3>📑 网页堆叠器 <span id="n">0</span></h3>
+    <button id="btnFold" onclick="foldPanel()">收起 ✕</button>
+  </div>
+  <textarea id="u" rows="2" placeholder="粘贴地址，一行一个（可一次贴多个）"></textarea>
+  <button id="add" onclick="go()">➕ 添加</button>
+  <button id="showAll" onclick="showAllBodies()">显示全部已隐藏页</button>
+  <button id="clr" onclick="clr()">🗑 清空全部</button>
+  <div class="hint">图片地址（.jpg/.png/.gif/.webp 结尾）自动按图片显示，每张单独删除/隐藏；网页若与工具同源，可用「图片管理」逐张删除</div>
+</div>
+
+<div id="foldBall" onclick="foldPanel()">☰</div>
+<div id="box"></div>
+
+<div id="imgMgr">
+  <div id="imgMgrTop">
+    <span>图片管理（点删除即从页面移除该图）</span>
+    <button onclick="closeImgMgr()">关闭</button>
+  </div>
+  <div id="imgMgrBox"></div>
+</div>
+
+<script>
+var box = document.getElementById('box');
+var n = document.getElementById('n');
+var u = document.getElementById('u');
+
+function count(){ n.innerHTML = box.children.length; }
+
+/* 面板收起 / 展开 */
+function foldPanel(){
+  var panel = document.getElementById('panel');
+  var ball = document.getElementById('foldBall');
+  if (panel.className == 'collapsed') {
+    panel.className = '';
+    ball.className = '';
+  } else {
+    panel.className = 'collapsed';
+    ball.className = 'on';
+  }
+}
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* 判断是否图片地址 */
+function isImageUrl(url){
+  var p = url.split('?')[0].split('#')[0].toLowerCase();
+  return /\.(jpg|jpeg|png|gif|webp|bmp|avif)$/.test(p);
+}
+
+/* 添加（支持多行，一行一个） */
+function go(){
+  var raw = u.value.replace(/^\s+|\s+$/g, '');
+  if(!raw){ alert('请先输入网址'); return; }
+
+  var lines = raw.split('\n');
+  var added = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var one = lines[i].replace(/^\s+|\s+$/g, '');
+    if(!one) continue;
+    addOne(one);
+    added++;
+  }
+  u.value = '';
+  u.focus();
+  if(added > 0){
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+}
+
+function addOne(inputUrl){
+  var url = inputUrl;
+  if(url.indexOf('://') < 0) url = 'https://' + url;
+
+  var idx = box.children.length + 1;
+  var isImg = isImageUrl(url);
+
+  var item = document.createElement('div');
+  item.className = 'item';
+
+  var barHtml =
+    '<div class="bar">' +
+      '<b>第' + idx + '项</b>' +
+      '<span class="url">' + esc(url) + '</span>' +
+      '<button class="b-hide">隐藏</button>' +
+      '<button class="b-del">删除</button>' +
+    '</div>';
+
+  var bodyHtml;
+  if (isImg) {
+    bodyHtml =
+      '<div class="body">' +
+        '<div class="picbar">' +
+          '<span>图片模式 · 点击图片可隐藏/恢复</span>' +
+          '<button class="b-picdel">✕ 删除这张图</button>' +
+        '</div>' +
+        '<div class="picbox"><img src="' + esc(url) + '"></div>' +
+      '</div>';
+  } else {
+    bodyHtml =
+      '<div class="body">' +
+        '<div class="loading">⏳ 加载中…</div>' +
+        '<div class="tipbar"><span class="tiptext"></span><button class="b-imgmgr">图片管理</button></div>' +
+        '<iframe src="' + esc(url) + '" style="display:none;"></iframe>' +
+      '</div>';
+  }
+
+  item.innerHTML = barHtml + bodyHtml;
+  box.appendChild(item);
+
+  /* 隐藏 / 删除整个条目 */
+  var body = item.querySelector('.body');
+  var btnHide = item.querySelector('.b-hide');
+
+  btnHide.onclick = function(){
+    if (body.className.indexOf('off') > -1) {
+      body.className = 'body';
+      btnHide.innerHTML = '隐藏';
+    } else {
+      body.className = 'body off';
+      btnHide.innerHTML = '显示';
+    }
+  };
+
+  item.querySelector('.b-del').onclick = function(){
+    item.parentNode.removeChild(item);
+    count();
+  };
+
+  if (isImg) {
+    /* 图片模式：删除这张图 + 点图切换隐藏/恢复 */
+    var pic = item.querySelector('.picbox img');
+    var picDel = item.querySelector('.b-picdel');
+
+    picDel.onclick = function(){
+      item.parentNode.removeChild(item);
+      count();
+    };
+
+    pic.onclick = function(){
+      if (pic.style.display == 'none') {
+        pic.style.display = '';
+      } else {
+        pic.style.display = 'none';
+      }
+    };
+  } else {
+    var frame = item.querySelector('iframe');
+    var loading = item.querySelector('.loading');
+    var tipbar = item.querySelector('.tipbar');
+    var tiptext = item.querySelector('.tiptext');
+    var btnMgr = item.querySelector('.b-imgmgr');
+
+    frame.onload = function(){
+      loading.style.display = 'none';
+      frame.style.display = 'block';
+
+      /* 尝试读取内部 DOM：同源可读，跨域会抛异常 */
+      var doc = null;
+      try {
+        doc = frame.contentDocument || frame.contentWindow.document;
+      } catch (e) { doc = null; }
+
+      if (doc && doc.getElementsByTagName('img').length > 0) {
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '同源页面：可逐张删除图片';
+        btnMgr.onclick = function(){ openImgMgr(frame, doc); };
+      } else {
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '跨域网站无法读取内部图片（浏览器同源策略），仅能整页隐藏或删除';
+        btnMgr.style.display = 'none';
+      }
+    };
+  }
+
+  count();
+}
+
+/* ---------- 图片管理浮层：逐张删除页面内的图片 ---------- */
+function openImgMgr(frame, doc){
+  var boxEl = document.getElementById('imgMgrBox');
+  boxEl.innerHTML = '';
+
+  var imgs = doc.getElementsByTagName('img');
+  if (imgs.length == 0) {
+    boxEl.innerHTML = '<div style="padding:20px;color:#666;font-size:13px;">该页面没有图片</div>';
+  }
+
+  /* 先快照，避免边删边遍历出错 */
+  var list = [];
+  for (var i = 0; i < imgs.length; i++) { list.push(imgs[i]); }
+
+  for (var k = 0; k < list.length; k++) {
+    buildImgRow(boxEl, list[k]);
+  }
+
+  document.getElementById('imgMgr').className = 'on';
+}
+
+function buildImgRow(boxEl, imgEl){
+  var row = document.createElement('div');
+  row.className = 'row';
+
+  var src = imgEl.src || '';
+  row.innerHTML =
+    '<img src="' + esc(src) + '">' +
+    '<div class="src">' + esc(src) + '</div>' +
+    '<button>✕ 删除</button>';
+
+  row.getElementsByTagName('button')[0].onclick = function(){
+    try {
+      if (imgEl && imgEl.parentNode) {
+        imgEl.parentNode.removeChild(imgEl);
+      }
+    } catch (e) {
+      var p = imgEl.parentNode;
+      if (p) { p.removeChild(imgEl); }
+    }
+    row.className = 'row gone';
+    row.getElementsByTagName('button')[0].innerHTML = '已删除';
+    row.getElementsByTagName('button')[0].disabled = true;
+  };
+
+  boxEl.appendChild(row);
+}
+
+function closeImgMgr(){
+  document.getElementById('imgMgr').className = '';
+  document.getElementById('imgMgrBox').innerHTML = '';
+}
+
+/* 显示全部已隐藏的页 */
+function showAllBodies(){
+  var items = box.getElementsByClassName('item');
+  for (var i = 0; i < items.length; i++) {
+    var b = items[i].getElementsByClassName('body')[0];
+    if (b && b.className.indexOf('off') > -1) {
+      b.className = 'body';
+      var hb = items[i].getElementsByClassName('b-hide')[0];
+      if (hb) hb.innerHTML = '隐藏';
+    }
+  }
+}
+
+function clr(){
+  if(box.children.length == 0) return;
+  if(!confirm('确定清空全部？')) return;
+  box.innerHTML = '';
+  count();
+}
+
+/* 回车：Ctrl+Enter 或 单行时回车即添加 */
+u.onkeydown = function(e){
+  if (e.keyCode == 13 && !e.shiftKey) {
+    go();
+    return false;
+  }
+};
+</script>
+
+</body>
+</html>
