@@ -81,7 +81,13 @@ body.panelfold .bar,body.panelfold .cropbar,body.panelfold .picbar,body.panelfol
 .picbox img{max-width:100%;max-height:1080px;height:auto;display:block;margin:0 auto;border-radius:4px}
 .picbar{padding:7px 10px;background:#f1f5f9;font-size:12px;color:#555;display:flex;justify-content:space-between;align-items:center;gap:6px}
 .picbar button{width:auto;padding:5px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:4px;background:#dc2626;flex-shrink:0}
+/* 图片逐张到位时的淡入，显得"一张张出来" */
+@keyframes swfade{from{opacity:.16}to{opacity:1}}
+.picbox img{animation:swfade .4s ease-out}
 .loading{padding:10px;font-size:13px;color:#2563eb}
+.loading u{color:#0f766e;cursor:pointer;text-decoration:none;border-bottom:1px dashed #0f766e;margin-left:6px}
+.b-open{width:auto;padding:5px 9px;font-size:12px;margin:0;flex-shrink:0;border-radius:4px;
+  background:#0f766e;color:#fff;text-decoration:none;line-height:1.6}
 .tipbar{padding:6px 10px;font-size:12px;color:#92400e;background:#fef3c7;display:none;line-height:1.5;align-items:center;gap:8px}
 .tipbar.on{display:flex}
 .tipbar button{width:auto;padding:4px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:4px;background:#2563eb;flex-shrink:0}
@@ -264,6 +270,7 @@ function addOne(inputUrl){
     '<div class="bar">' +
       '<b>第' + idx + '项</b>' +
       '<span class="url">' + esc(url) + '</span>' +
+      '<a class="b-open" href="' + esc(url) + '" target="_blank" rel="noopener">新窗口</a>' +
       '<button class="b-hide">隐藏</button>' +
       '<button class="b-del">删除</button>' +
     '</div>';
@@ -281,12 +288,12 @@ function addOne(inputUrl){
   } else {
     bodyHtml =
       '<div class="body">' +
-        '<div class="loading">⏳ 加载中…</div>' +
+        '<div class="loading">⏳ 正在加载…</div>' +
         '<div class="tipbar"><span class="tiptext"></span><button class="b-imgmgr">图片管理</button></div>' +
         '<div class="crop">' +
           '<div class="cut top"></div>' +
           '<div class="cut bot"></div>' +
-          '<iframe src="' + esc(url) + '" style="display:none;"></iframe>' +
+          '<iframe src="' + esc(url) + '"></iframe>' +
         '</div>' +
         '<div class="cropbar">' +
           '<span class="c-meas-wrap">实测整页高 <b class="c-meas">--</b></span>' +
@@ -410,6 +417,44 @@ function addOne(inputUrl){
       }, 400);
     }
     item._autoFit = autoFit;
+
+    /* 把页面里的每张图都挂上"到位即显示"：
+       - 懒加载的图改成 eager，立刻开始下载，不用等滚动；
+       - 每张图 load 一结束立刻重算高度 + 重绘，页面跟着这张图长出来；
+       - 新插入的图用 MutationObserver 继续挂上 */
+    function hookImages(doc){
+      if (!doc || !doc.head) return;
+      if (!doc.getElementById('swxfade')) {
+        var stl = doc.createElement('style');
+        stl.id = 'swxfade';
+        stl.textContent = '@keyframes swfade{from{opacity:.16}to{opacity:1}}' +
+                          '.swfading{animation:swfade .35s ease-out}';
+        if (doc.head) doc.head.appendChild(stl);
+      }
+      var imgs = doc.getElementsByTagName('img');
+      for (var i = 0; i < imgs.length; i++) {
+        (function(im){
+          if (im.__sw) return;
+          im.__sw = 1;
+          try { im.loading = 'eager'; } catch (e) {}
+          if (!im.complete) {
+            im.addEventListener('load', function(){
+              try { im.classList.add('swfading'); } catch (e) {}
+              autoFit();          /* 一到就立刻把高度撑上来 */
+            });
+            im.addEventListener('error', function(){ autoFit(); });
+          }
+        })(imgs[i]);
+      }
+      if (!doc.__swObs && doc.body) {
+        try {
+          var mo = new MutationObserver(function(){ hookImages(doc); });
+          mo.observe(doc.body, { childList: true, subtree: true });
+          doc.__swObs = mo;
+        } catch (e) {}
+      }
+    }
+    item._hookImages = hookImages;
 
     /* 全量预热（同源）：两步走
        ① 把 iframe 一层层撑高（2000→4000→…→10万），把懒加载/滚动加载的内容全逼出来；
@@ -591,10 +636,39 @@ function addOne(inputUrl){
       tiptext.innerHTML = '已裁到末图底部：图下方 ' + st.bot + ' px（含页码等区域）已隐藏，可直接接下一页';
     };
 
-    frame.onload = function(){
-      loading.style.display = 'none';
-      frame.style.display = 'block';
+    /* 边下边看：iframe 一建好就可见，图片每到位一张就更新进度、顺便把高度撑开，
+       不再等 onload（大页面 onload 要等所有图片下完，会一直白屏） */
+    var loadStart = Date.now();
+    var loadTimer = setInterval(loaderTick, 600);
 
+    function finishLoading(){
+      if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
+      loading.style.display = 'none';
+    }
+
+    function loaderTick(){
+      var sec = Math.round((Date.now() - loadStart) / 1000);
+      var d = sameOriginDoc(frame);
+      if (d && d.getElementsByTagName) {
+        hookImages(d);                     /* 一有文档就把每张图挂上"到位即显示" */
+        var imgs = d.getElementsByTagName('img');
+        var total = imgs.length, ok = 0;
+        for (var i = 0; i < total; i++) {
+          if (imgs[i].complete && imgs[i].naturalWidth > 0) ok++;
+        }
+        loading.textContent = '⏳ 图片已到位 ' + ok + ' / ' + total + ' 张 · 已等 ' + sec +
+          ' 秒（页面会随着加载一点点变长）';
+        if (!userSetH) autoFit();          /* 每来一张就把高度往上撑，别等最后一次性跳 */
+        if (total > 0 && ok >= total) finishLoading();
+        if (sec > 180) finishLoading();
+      } else {
+        loading.textContent = '⏳ 已等 ' + sec + ' 秒（跨域页读不到张数，图片会自己一张张出现）';
+        if (sec > 180) finishLoading();
+      }
+    }
+
+    frame.onload = function(){
+      finishLoading();
       var doc = sameOriginDoc(frame);
       if (doc) {
         st.cross = false;
@@ -603,13 +677,7 @@ function addOne(inputUrl){
         if (total > 200) { st.h = total; st.top = 0; st.bot = 0; }
         repaint();
         startFit();     /* 图片/异步内容稍后到位，4~5 秒内持续校准，避免只撑到屏幕高 */
-        var imgs0 = doc.getElementsByTagName('img');
-        for (var ii = 0; ii < imgs0.length; ii++) {
-          if (!imgs0[ii].__fitted) {
-            imgs0[ii].__fitted = 1;
-            imgs0[ii].addEventListener('load', autoFit);
-          }
-        }
+        hookImages(doc);
         if (doc.getElementsByTagName('img').length > 0) {
           tipbar.className = 'tipbar on';
           tiptext.innerHTML = '同源代码页：已自动撑满整页高度（具体数值见左边「实测整页高」）；可逐张删图，或点「智能裁剪」裁到末图底部';
@@ -641,6 +709,7 @@ function addOne(inputUrl){
     };
   }
 
+  repaint();          /* 建好就先给一块可见区域，边下边看 */
   count();
   applyUni();
   if (typeof updateTraffic === 'function') updateTraffic();
