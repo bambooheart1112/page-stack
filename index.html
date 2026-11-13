@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="renderer" content="webkit">
 <title>网页堆叠器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='7' width='19' height='13' rx='2' fill='%23dbeafe' stroke='%232563eb' stroke-width='2'/%3E%3Crect x='10' y='14' width='19' height='13' rx='2' fill='%23fff' stroke='%232563eb' stroke-width='2'/%3E%3C/svg%3E">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
 body{padding:12px;background:#f4f4f4}
@@ -17,11 +18,30 @@ body{padding:12px;background:#f4f4f4}
 #n{background:#2563eb;color:#fff;border-radius:10px;padding:2px 10px;font-size:13px}
 #traffic{margin-left:auto;font-size:12px;color:#0f766e;background:#ccfbf1;border-radius:10px;
   padding:4px 9px;white-space:nowrap;cursor:pointer;flex-shrink:0}
-#u{width:100%;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:8px;margin:8px 0;line-height:1.4;resize:vertical}
+
+/* 8 个添加位：窄屏一行一个，宽屏两列 */
+#slots{display:grid;grid-template-columns:1fr;gap:6px;margin:10px 0 4px}
+@media(min-width:620px){#slots{grid-template-columns:1fr 1fr}}
+.slot{display:flex;align-items:center;min-width:0;background:#fff;
+  border:1px solid #cbd5e1;border-radius:8px;overflow:hidden}
+.slot i{font-style:normal;flex-shrink:0;width:28px;align-self:stretch;display:flex;
+  align-items:center;justify-content:center;background:#f1f5f9;color:#6b7280;font-size:12px;font-weight:bold}
+.slot.filled{border-color:#93c5fd}
+.slot.filled i{background:#dbeafe;color:#1d4ed8}
+.slot input{flex:1;min-width:0;width:100%;padding:11px 10px;font-size:16px;line-height:1.3;
+  border:0;border-radius:0;background:#fff}
+.slot input:focus{outline:none;background:#f8faff}
+.slot:focus-within{border-color:#2563eb}
+.slot button{width:auto;flex-shrink:0;padding:11px 13px;font-size:14px;margin:0;
+  background:#2563eb;border-radius:0;font-weight:normal}
+.sline{font-size:12px;color:#6b7280;min-height:17px;line-height:1.5;margin-bottom:2px}
+.sline.warn{color:#b91c1c}
+
 button{width:100%;padding:13px;font-size:16px;border:0;border-radius:8px;color:#fff;margin:6px 0;font-weight:bold}
 #btnFold,#foldBall{width:auto}
 #btnFold{padding:6px 12px;font-size:13px;background:#6b7280;margin:0;font-weight:normal}
-#add{background:#2563eb}
+#addAll{background:#2563eb}
+#clrIn{background:#9ca3af;font-size:14px;font-weight:normal}
 #showAll{background:#6b7280;font-size:14px;font-weight:normal}
 #clr{background:#dc2626;font-size:14px;font-weight:normal}
 .hint{font-size:12px;color:#666;margin-top:8px;line-height:1.5}
@@ -39,6 +59,7 @@ button{width:100%;padding:13px;font-size:16px;border:0;border-radius:8px;color:#
 .bar .url{flex:1;word-break:break-all;color:#555;overflow:hidden}
 .bar button{width:auto;padding:5px 9px;font-size:12px;margin:0;flex-shrink:0;font-weight:normal;border-radius:4px}
 .b-hide{background:#6b7280}
+.b-refresh{background:#0891b2}
 .b-del{background:#dc2626}
 .body{overflow:hidden}
 .body.off{display:none}
@@ -52,6 +73,32 @@ iframe{width:100%;height:800px;border:0;display:block;background:#fff}
   padding-top:4px;box-sizing:border-box;z-index:3;pointer-events:none}
 .cut.top{top:0}
 .cut.bot{bottom:0}
+
+/* 单击这一页：盖一层透明捕捉层接点击（iframe 内部点不到），点完画一条蓝色虚线 */
+.hit{position:absolute;left:0;right:0;top:0;bottom:0;z-index:2;display:none;cursor:crosshair}
+body.pickh .hit{display:block}
+.mk{position:absolute;left:0;right:0;height:0;border-top:2px dashed #2563eb;z-index:4;display:none;pointer-events:none}
+.mk span{position:absolute;right:10px;top:-24px;background:#2563eb;color:#fff;font-size:12px;line-height:1.6;
+  padding:1px 8px;border-radius:5px;white-space:nowrap}
+
+/* 点击后浮出的小面板：显示当前高和点击处，可直接把「高」设过去 */
+#hEdit{position:fixed;left:0;top:0;z-index:99999;display:none;width:254px;max-width:calc(100vw - 16px);
+  background:#fff;border:2px solid #2563eb;border-radius:10px;padding:10px 12px;
+  box-shadow:0 10px 26px rgba(15,23,42,.28);font-size:13px;color:#334155}
+#hEdit .he-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+#hEdit .he-top b{color:#2563eb;font-size:14px}
+#hEdit .he-x{width:auto;margin:0 0 0 auto;padding:4px 10px;font-size:12px;font-weight:normal;
+  border-radius:6px;background:#6b7280}
+#hEdit .he-line{line-height:1.85;color:#64748b;font-size:12px}
+#hEdit .he-line b{color:#0f172a;font-size:15px;font-variant-numeric:tabular-nums}
+#hEdit .he-put{display:flex;align-items:center;gap:6px;margin-top:8px}
+#hEdit .he-put span{font-size:12px;color:#64748b;flex-shrink:0}
+#hEdit .he-put input{width:82px;padding:7px 8px;font-size:16px;border:1px solid #cbd5e1;border-radius:6px}
+#hEdit .he-put input:focus{outline:none;border-color:#2563eb}
+#hEdit .he-put button{width:auto;margin:0;padding:8px 14px;font-size:14px;font-weight:bold;
+  border-radius:6px;background:#2563eb;flex-shrink:0}
+#hEdit .he-tip{margin-top:7px;font-size:11px;color:#94a3b8;line-height:1.5}
+
 .cropbar{padding:8px 10px;background:#f8fafc;font-size:12px;color:#555;display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid #e5e7eb}
 .cropbar span.cf{display:flex;align-items:center;gap:4px}
 .cropbar i{font-style:normal;font-size:11px;color:#6b7280}
@@ -70,6 +117,9 @@ body.showbar .cropbar{display:flex}
 body.showbar .picbar{display:flex}
 /* 面板收起时：高/上裁/下裁 等条目控制条一并隐藏；展开面板时一起回来 */
 body.panelfold .bar,body.panelfold .cropbar,body.panelfold .picbar,body.panelfold .tipbar{display:none !important}
+/* 面板收起时：单击页面取高这个功能一起关闭（捕捉层和标记线都不出现） */
+body.panelfold .hit{display:none !important}
+body.panelfold .mk{display:none !important}
 /* 面板上的开关行 */
 .opt{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;margin-top:10px;color:#333}
 .opt label{display:flex;align-items:center;gap:4px}
@@ -81,16 +131,11 @@ body.panelfold .bar,body.panelfold .cropbar,body.panelfold .picbar,body.panelfol
 .picbox img{max-width:100%;max-height:1080px;height:auto;display:block;margin:0 auto;border-radius:4px}
 .picbar{padding:7px 10px;background:#f1f5f9;font-size:12px;color:#555;display:flex;justify-content:space-between;align-items:center;gap:6px}
 .picbar button{width:auto;padding:5px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:4px;background:#dc2626;flex-shrink:0}
-/* 图片逐张到位时的淡入，显得"一张张出来" */
-@keyframes swfade{from{opacity:.16}to{opacity:1}}
-.picbox img{animation:swfade .4s ease-out}
 .loading{padding:10px;font-size:13px;color:#2563eb}
-.loading u{color:#0f766e;cursor:pointer;text-decoration:none;border-bottom:1px dashed #0f766e;margin-left:6px}
-.b-open{width:auto;padding:5px 9px;font-size:12px;margin:0;flex-shrink:0;border-radius:4px;
-  background:#0f766e;color:#fff;text-decoration:none;line-height:1.6}
 .tipbar{padding:6px 10px;font-size:12px;color:#92400e;background:#fef3c7;display:none;line-height:1.5;align-items:center;gap:8px}
 .tipbar.on{display:flex}
 .tipbar button{width:auto;padding:4px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:4px;background:#2563eb;flex-shrink:0}
+.tipbar .b-retry{background:#dc2626}
 .tipbar span{flex:1}
 
 /* 图片管理浮层 */
@@ -114,16 +159,22 @@ body.panelfold .bar,body.panelfold .cropbar,body.panelfold .picbar,body.panelfol
     <span id="traffic" title="统计本次打开页面实际下载的字节（本页 + 同源网页）；跨域网页浏览器不允许读，会标注未计">流量 --</span>
     <button id="btnFold" onclick="foldPanel()">收起 ✕</button>
   </div>
-  <textarea id="u" rows="2" placeholder="粘贴地址，一行一个（可一次贴多个）"></textarea>
-  <button id="add" onclick="go()">➕ 添加</button>
+  <div id="slots"></div>
+  <div class="sline" id="slotTip">8 个添加位，每格一个地址；一次粘多行会自动分到后面的空格</div>
+  <button id="addAll" onclick="go()">➕ 添加全部已填</button>
+  <button id="clrIn" onclick="clearInputs()">清空没添加的地址</button>
   <button id="showAll" onclick="showAllBodies()">显示全部已隐藏页</button>
   <button id="clr" onclick="clr()">🗑 清空全部</button>
   <div class="opt">
     <label><input type="checkbox" id="chkSeam" checked onchange="setSeam(this.checked)"> 无缝拼接（去边框/间距/控制条）</label>
     <label><input type="checkbox" id="chkUni" checked onchange="applyUni()"> 统一滚动条（网页内部不滚动）</label>
     <label><input type="checkbox" id="chkBar" checked onchange="setBar(this.checked)"> 显示条目控制条</label>
+    <label><input type="checkbox" id="chkClickH" checked onchange="setClickH(this.checked)"> 单击页面看高度、直接设「高」</label>
   </div>
   <div class="hint">图片地址（.jpg/.png/.gif/.webp 结尾）自动按图片显示，每张单独删除/隐藏；网页若与工具同源，可用「图片管理」逐张删除<br>
+  单击网页任意位置：浮出这一页的「当前高」和「点击处」是多少 px（蓝虚线标出位置），填进「高」点「应用」，这一页就显示到那里；点「收起」后这个功能关闭<br>
+  某一页没加载出来（一直空白、超过 8 秒还没好、几秒就空返回）：点该页黄条上的「↻ 刷新这一页」（无缝模式下标题栏是隐藏的，用这个），只重载这一页，其它页不动<br>
+  标签标题会自动换成「第一页的网页名称」：同源页面直接读它的标题，跨域读不到就用域名；删掉第一页会换成新的第一页，全部清空则恢复成「网页堆叠器」<br>
   无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效<br>
   统一滚动条：每个网页各自实测整页高度（同源可直接读到，结果会显示在条目的「实测整页高」里并填入「高」作为默认值，你可以自己改）；跨域读不到，需自己填「高」</div>
 </div>
@@ -143,12 +194,39 @@ body.panelfold .bar,body.panelfold .cropbar,body.panelfold .picbar,body.panelfol
   <div id="imgMgrBox"></div>
 </div>
 
+<div id="hEdit">
+  <div class="he-top"><b id="heTitle">第1项</b><button class="he-x" id="heX">关闭</button></div>
+  <div class="he-line">当前高 <b id="heCur">--</b> px</div>
+  <div class="he-line">点击处 <b id="hePoint">--</b> px</div>
+  <div class="he-put"><span>高</span><input id="heIn" type="number" min="200" step="10"><span>px</span><button id="heApply">应用</button></div>
+  <div class="he-tip">点「应用」后，这一页就显示到这条虚线为止</div>
+</div>
+
 <script>
 var box = document.getElementById('box');
 var n = document.getElementById('n');
-var u = document.getElementById('u');
 
 function count(){ n.innerHTML = box.children.length; }
+
+/* ---------- 标签标题跟着第一页走：第一页载入后，用它的网页名称当标题 ---------- */
+var BASE_TITLE = document.title;
+function hostOf(u){
+  try { return (new URL(u)).hostname; } catch (e) { return ''; }
+}
+function syncTitle(){
+  var items = box.getElementsByClassName('item');
+  var first = null;
+  for (var i = 0; i < items.length; i++) {
+    if (!items[i]._isImg) { first = items[i]; break; }   /* 跳过图片，找第一个网页 */
+  }
+  if (!first) { document.title = BASE_TITLE; return; }
+  var f = first.querySelector('iframe');
+  var d = f ? sameOriginDoc(f) : null;
+  var t = d ? String(d.title || '').replace(/^\s+|\s+$/g, '') : '';
+  if (t) { document.title = t; return; }
+  var host = hostOf(first._url || '');
+  document.title = host ? host : BASE_TITLE;   /* 跨域读不到标题，退一步用域名 */
+}
 
 /* 面板收起 / 展开 */
 function foldPanel(){
@@ -164,11 +242,12 @@ function foldPanel(){
     syncBodyClass();
     window.scrollTo(0, 0);
   } else {
-    /* 收起面板：连同每个网页下的「高 / 上裁 / 下裁」一起收起来 */
+    /* 收起面板：连同每个网页下的「高 / 上裁 / 下裁」一起收起来，单击取高也关掉 */
     panel.className = 'collapsed';
     ball.className = 'on';
     __folded = true;
     syncBodyClass();
+    if (typeof hEditClose === 'function') hEditClose();
   }
 }
 
@@ -236,24 +315,160 @@ function saveH(host, v){
   try { localStorage.setItem('sw_h_' + host, String(v)); } catch (e) {}
 }
 
-/* 添加（支持多行，一行一个） */
-function go(){
-  var raw = u.value.replace(/^\s+|\s+$/g, '');
-  if(!raw){ alert('请先输入网址'); return; }
+/* ---------- 8 个添加位：每格一个地址，回车就添加 ---------- */
+var SLOT_MAX = 8;
+var slotInputs = [];
+(function buildSlots(){
+  var wrap = document.getElementById('slots');
+  if (!wrap) return;
+  for (var i = 0; i < SLOT_MAX; i++) {
+    var row = document.createElement('div');
+    row.className = 'slot';
+    row.innerHTML = '<i>' + (i + 1) + '</i>' +
+      '<input type="text" autocomplete="off" spellcheck="false" ' +
+      'placeholder="' + (i === 0 ? '粘贴地址，一行一个' : '可选，留空即可') + '">' +
+      '<button>添加</button>';
+    var inp = row.querySelector('input');
+    var btn = row.querySelector('button');
+    bindSlot(inp, btn, i);
+    slotInputs.push(inp);
+    wrap.appendChild(row);
+  }
+})();
 
-  var lines = raw.split('\n');
-  var added = 0;
+function bindSlot(inp, btn, i){
+  btn.onclick = function(){ addFromSlot(i); };
+  inp.onkeydown = function(e){
+    if (e.keyCode == 13) { e.preventDefault(); addFromSlot(i); return false; }
+  };
+  inp.oninput = function(){ markSlot(i); };
+  /* 粘进来的是多行，就一路塞到后面的空格里 */
+  inp.onpaste = function(e){
+    var t = '';
+    try { t = (e.clipboardData || window.clipboardData).getData('text') || ''; } catch (err) { t = ''; }
+    if (!/(\r|\n)/.test(t)) return;
+    e.preventDefault();
+    fillSlots(i, t);
+  };
+}
+
+function markSlot(i){
+  var row = slotInputs[i].parentNode;
+  if (row) row.className = 'slot' + (slotInputs[i].value.replace(/^\s+|\s+$/g, '') ? ' filled' : '');
+}
+
+function showSlotTip(msg, warn){
+  var el = document.getElementById('slotTip');
+  if (!el) return;
+  el.className = 'sline' + (warn ? ' warn' : '');
+  el.innerHTML = esc(msg);
+}
+
+function fillSlots(start, text){
+  var lines = text.split(/\r?\n/);
+  var vals = [];
   for (var i = 0; i < lines.length; i++) {
-    var one = lines[i].replace(/^\s+|\s+$/g, '');
-    if(!one) continue;
-    addOne(one);
+    var v = lines[i].replace(/^\s+|\s+$/g, '');
+    if (v) vals.push(v);
+  }
+  if (!vals.length) return;
+  var room = SLOT_MAX - start;
+  var put = Math.min(vals.length, room);
+  for (var k = 0; k < put; k++) {
+    slotInputs[start + k].value = vals[k];
+    markSlot(start + k);
+  }
+  if (vals.length > room) {
+    showSlotTip('第 ' + (start + 1) + '~' + SLOT_MAX + ' 位的 ' + put + ' 个已填好，还剩 ' +
+      (vals.length - room) + ' 个没位置放：先把这些添加上，再粘剩下的', true);
+  } else {
+    showSlotTip('已填入 ' + put + ' 个地址，点这一行的「添加」或下面「添加全部已填」', false);
+  }
+}
+
+/* 单个位置：添加这一格 */
+function addFromSlot(i){
+  var inp = slotInputs[i];
+  var v = inp.value.replace(/^\s+|\s+$/g, '');
+  if (!v) { inp.focus(); return; }
+  addOne(v);
+  inp.value = '';
+  markSlot(i);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+/* 添加全部已填的位置 */
+function go(){
+  var added = 0;
+  for (var i = 0; i < SLOT_MAX; i++) {
+    var v = slotInputs[i].value.replace(/^\s+|\s+$/g, '');
+    if (!v) continue;
+    addOne(v);
+    slotInputs[i].value = '';
+    markSlot(i);
     added++;
   }
-  u.value = '';
-  u.focus();
-  if(added > 0){
-    window.scrollTo(0, document.body.scrollHeight);
+  if (!added) {
+    showSlotTip('8 个位置都是空的，先粘一个地址进来', true);
+    slotInputs[0].focus();
+    return;
   }
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+/* 清空还没添加的地址 */
+function clearInputs(){
+  for (var i = 0; i < SLOT_MAX; i++) {
+    slotInputs[i].value = '';
+    markSlot(i);
+  }
+  showSlotTip('输入位已清空，已经加进来的网页不受影响', false);
+}
+
+/* ---------- 单击页面取高：浮出的小面板 ---------- */
+var heCtx = null;
+function hEditClose(){
+  var el = document.getElementById('hEdit');
+  if (el) el.style.display = 'none';
+  heCtx = null;
+}
+
+function hEditOpen(ctx, x, y){
+  var el = document.getElementById('hEdit');
+  if (!el) return;
+  heCtx = ctx;
+  var tEl = document.getElementById('heTitle');
+  if (tEl) tEl.textContent = ctx.label;
+  var cEl = document.getElementById('heCur');
+  if (cEl) cEl.textContent = ctx.st.h;
+  var pEl = document.getElementById('hePoint');
+  if (pEl) pEl.textContent = ctx.point;
+  var inp = document.getElementById('heIn');
+  if (inp) inp.value = Math.max(200, ctx.point);
+  el.style.display = 'block';
+  var w = el.offsetWidth || 254;
+  var h = el.offsetHeight || 150;
+  var vw = window.innerWidth || 360;
+  var vh = window.innerHeight || 640;
+  var L = x + 12, T = y + 14;
+  if (L + w > vw - 8) L = vw - w - 8;
+  if (L < 8) L = 8;
+  if (T + h > vh - 8) T = y - h - 14;
+  if (T < 8) T = 8;
+  el.style.left = L + 'px';
+  el.style.top = T + 'px';
+  try { inp.focus(); } catch (err) {}
+  try { inp.select(); } catch (err) {}
+}
+
+function heApplyNow(){
+  if (!heCtx) return;
+  var inp = document.getElementById('heIn');
+  var v = parseInt(inp ? inp.value : 0, 10) || 0;
+  if (v < 200) { v = 200; if (inp) inp.value = 200; }
+  heCtx.apply(v);
+  var cEl = document.getElementById('heCur');
+  if (cEl) cEl.textContent = heCtx.st.h;
 }
 
 function addOne(inputUrl){
@@ -265,12 +480,14 @@ function addOne(inputUrl){
 
   var item = document.createElement('div');
   item.className = 'item';
+  item._url = url;        /* 标签标题要用第一页的网页名称 */
+  item._isImg = isImg;
 
   var barHtml =
     '<div class="bar">' +
       '<b>第' + idx + '项</b>' +
       '<span class="url">' + esc(url) + '</span>' +
-      '<a class="b-open" href="' + esc(url) + '" target="_blank" rel="noopener">新窗口</a>' +
+      '<button class="b-refresh" title="只重新加载这一页，其它页不动">↻ 刷新</button>' +
       '<button class="b-hide">隐藏</button>' +
       '<button class="b-del">删除</button>' +
     '</div>';
@@ -288,12 +505,14 @@ function addOne(inputUrl){
   } else {
     bodyHtml =
       '<div class="body">' +
-        '<div class="loading">⏳ 正在加载…</div>' +
-        '<div class="tipbar"><span class="tiptext"></span><button class="b-imgmgr">图片管理</button></div>' +
+        '<div class="loading">⏳ 加载中…</div>' +
+        '<div class="tipbar"><span class="tiptext"></span><button class="b-retry">↻ 刷新这一页</button><button class="b-imgmgr">图片管理</button></div>' +
         '<div class="crop">' +
           '<div class="cut top"></div>' +
           '<div class="cut bot"></div>' +
-          '<iframe src="' + esc(url) + '"></iframe>' +
+          '<iframe src="' + esc(url) + '" style="display:none;"></iframe>' +
+          '<div class="hit"></div>' +
+          '<div class="mk"><span></span></div>' +
         '</div>' +
         '<div class="cropbar">' +
           '<span class="c-meas-wrap">实测整页高 <b class="c-meas">--</b></span>' +
@@ -330,6 +549,7 @@ function addOne(inputUrl){
   item.querySelector('.b-del').onclick = function(){
     item.parentNode.removeChild(item);
     count();
+    syncTitle();
   };
 
   if (isImg) {
@@ -340,6 +560,7 @@ function addOne(inputUrl){
     picDel.onclick = function(){
       item.parentNode.removeChild(item);
       count();
+      syncTitle();
     };
 
     pic.onclick = function(){
@@ -369,6 +590,11 @@ function addOne(inputUrl){
     var barEl = item.querySelector('.cropbar');
     var cutTopEl = item.querySelector('.cut.top');
     var cutBotEl = item.querySelector('.cut.bot');
+    var hitEl = item.querySelector('.hit');
+    var mkEl = item.querySelector('.mk');
+    var mkLabel = item.querySelector('.mk span');
+    var refreshBtn = item.querySelector('.b-refresh');
+    var retryBtn = item.querySelector('.b-retry');
 
 /* 每个网页条目的裁剪状态：h=页面总高，top/bot=上下各裁掉多少 */
     var host = '';
@@ -392,6 +618,74 @@ function addOne(inputUrl){
     }
 
     item._repaint = repaint;
+
+    /* 单击这一页的任意位置：先算出点击处离这一页顶端多少 px，浮出小面板；
+       面板里填「高」点「应用」，这一页就截到那条蓝虚线为止。
+       面板收起（body.panelfold）或关掉开关（body 上没有 pickh）时，捕捉层不接点击 */
+    hitEl.onclick = function(ev){
+      if (__folded || !__clickH) return;
+      var vr = cropEl.getBoundingClientRect();
+      var y = Math.max(0, Math.round(ev.clientY - vr.top));
+      var point = Math.round((st.top || 0) + y);
+      if (mkEl) {
+        mkEl.style.top = y + 'px';
+        mkEl.style.display = 'block';
+        mkLabel.textContent = '点击处 ' + point + ' px';
+        mkLabel.style.top = (y < 26) ? '4px' : '-24px';
+      }
+      hEditOpen({
+        label: '第' + idx + '项',
+        st: st,
+        point: point,
+        apply: function(v){
+          userSetH = true;
+          st.h = Math.max(200, v);
+          st.bot = 0;          /* 终点由这条线定，下裁归零，页尾正好停在这里 */
+          repaint();
+          tipbar.className = 'tipbar on';
+          tiptext.innerHTML = '「高」已设为 ' + st.h + ' px：这一页显示到点击处为止' +
+            (st.top > 0 ? '（上面 ' + st.top + ' px 已裁掉）' : '');
+        }
+      }, ev.clientX, ev.clientY);
+    };
+
+    /* ---------- 这一页加载失败时的自救：只刷新这一页，不动其它页 ---------- */
+    var watchTimer = null;   /* 8 秒还没载入 → 提示可以重试 */
+    var loadT0 = 0;          /* 这一次加载的起始时间，用耗时判断是不是「秒开空内容」 */
+    var reloading = false;   /* 刷新过程中的中间态（先清空再载入），这期间的 onload 不算 */
+
+    /* 黄条上的提示文案（「↻ 刷新这一页」按钮一直都在，随时可点） */
+    function showTip(msg){
+      tipbar.className = 'tipbar on';
+      tiptext.innerHTML = msg;
+    }
+    function startWatch(){
+      if (watchTimer) clearTimeout(watchTimer);
+      loadT0 = Date.now();
+      watchTimer = setTimeout(function(){
+        showTip('这一页 8 秒还没加载出来（域名不通、网太慢、对方不让嵌入都会这样）。' +
+          '点「↻ 刷新这一页」只重载这一页，其它页不受影响');
+      }, 8000);
+    }
+    function reloadPage(){
+      if (fitTimer) clearInterval(fitTimer);
+      if (watchTimer) { clearTimeout(watchTimer); watchTimer = null; }
+      tipbar.className = 'tipbar';
+      tiptext.innerHTML = '';
+      loading.textContent = '⏳ 正在重新加载…';
+      loading.style.display = '';
+      frame.style.display = 'none';
+      reloading = true;
+      frame.setAttribute('src', 'about:blank');       /* 先清空，免得浏览器拿上一次的旧内容 */
+      setTimeout(function(){
+        frame.setAttribute('src', url);
+        reloading = false;
+        startWatch();
+      }, 90);
+    }
+    if (refreshBtn) refreshBtn.onclick = reloadPage;
+    if (retryBtn) retryBtn.onclick = reloadPage;
+    startWatch();
 
     /* 同源页自动校准高度：图片是异步加载的，刚 onload 时可能还没撑开，
        所以在加载后几秒内反复测几次，取到真实整页高度；用户手动改过就停手 */
@@ -417,44 +711,6 @@ function addOne(inputUrl){
       }, 400);
     }
     item._autoFit = autoFit;
-
-    /* 把页面里的每张图都挂上"到位即显示"：
-       - 懒加载的图改成 eager，立刻开始下载，不用等滚动；
-       - 每张图 load 一结束立刻重算高度 + 重绘，页面跟着这张图长出来；
-       - 新插入的图用 MutationObserver 继续挂上 */
-    function hookImages(doc){
-      if (!doc || !doc.head) return;
-      if (!doc.getElementById('swxfade')) {
-        var stl = doc.createElement('style');
-        stl.id = 'swxfade';
-        stl.textContent = '@keyframes swfade{from{opacity:.16}to{opacity:1}}' +
-                          '.swfading{animation:swfade .35s ease-out}';
-        if (doc.head) doc.head.appendChild(stl);
-      }
-      var imgs = doc.getElementsByTagName('img');
-      for (var i = 0; i < imgs.length; i++) {
-        (function(im){
-          if (im.__sw) return;
-          im.__sw = 1;
-          try { im.loading = 'eager'; } catch (e) {}
-          if (!im.complete) {
-            im.addEventListener('load', function(){
-              try { im.classList.add('swfading'); } catch (e) {}
-              autoFit();          /* 一到就立刻把高度撑上来 */
-            });
-            im.addEventListener('error', function(){ autoFit(); });
-          }
-        })(imgs[i]);
-      }
-      if (!doc.__swObs && doc.body) {
-        try {
-          var mo = new MutationObserver(function(){ hookImages(doc); });
-          mo.observe(doc.body, { childList: true, subtree: true });
-          doc.__swObs = mo;
-        } catch (e) {}
-      }
-    }
-    item._hookImages = hookImages;
 
     /* 全量预热（同源）：两步走
        ① 把 iframe 一层层撑高（2000→4000→…→10万），把懒加载/滚动加载的内容全逼出来；
@@ -636,66 +892,21 @@ function addOne(inputUrl){
       tiptext.innerHTML = '已裁到末图底部：图下方 ' + st.bot + ' px（含页码等区域）已隐藏，可直接接下一页';
     };
 
-    /* 边下边看：iframe 一建好就可见，图片每到位一张就更新进度、顺便把高度撑开，
-       不再等 onload（大页面 onload 要等所有图片下完，会一直白屏） */
-    var loadStart = Date.now();
-    var loadTimer = setInterval(loaderTick, 600);
-
-    function finishLoading(){
-      if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
-      loading.style.display = 'none';
-    }
-
-    function loaderTick(){
-      var sec = Math.round((Date.now() - loadStart) / 1000);
-      var d = sameOriginDoc(frame);
-      if (d && d.getElementsByTagName) {
-        hookImages(d);                     /* 一有文档就把每张图挂上"到位即显示" */
-        var imgs = d.getElementsByTagName('img');
-        var total = imgs.length, ok = 0;
-        for (var i = 0; i < total; i++) {
-          if (imgs[i].complete && imgs[i].naturalWidth > 0) ok++;
-        }
-        loading.textContent = '⏳ 图片已到位 ' + ok + ' / ' + total + ' 张 · 已等 ' + sec +
-          ' 秒（页面会随着加载一点点变长）';
-        if (!userSetH) autoFit();          /* 每来一张就把高度往上撑，别等最后一次性跳 */
-        if (total > 0 && ok >= total) finishLoading();
-        if (sec > 180) finishLoading();
-      } else {
-        loading.textContent = '⏳ 已等 ' + sec + ' 秒（跨域页读不到张数，图片会自己一张张出现）';
-        if (sec > 180) finishLoading();
-      }
-    }
-
-    /* 20 秒还没 onload：给一句人话提示，别让人干等 */
-    setTimeout(function(){
-      if (loadTimer) {
-        tipbar.className = 'tipbar on';
-        tiptext.innerHTML = '这个页面 20 秒还没加载完（图片多/服务器慢）。内容会一张张自己出来，' +
-          '先把「高」加到能看见内容的位置，或点「新窗口」对照原页';
-      }
-    }, 20000);
-
     frame.onload = function(){
-      finishLoading();
-      var doc = sameOriginDoc(frame);
-      var loadMs = Date.now() - loadStart;
+      /* 刷新过程中先清空的那一下（about:blank）不算这一页载入完成 */
+      if (reloading) return;
+      if ((frame.getAttribute('src') || '') === 'about:blank') return;
+      try {
+        var blankCheck = frame.contentDocument;
+        if (blankCheck && String(blankCheck.location.href || '') === 'about:blank') return;
+      } catch (err) {}
 
-      /* 0 秒级 onload + 读不到文档 = 这个地址根本没内容回来：
-         要么被网站禁止嵌入（X-Frame-Options / CSP），要么域名/网络不通。
-         实测：被拒的站 0.02 秒就触发 onload，正常图片站要 7~30 秒。 */
-      if (!doc && loadMs < 600) {
-        st.cross = true;
-        repaint();
-        tipbar.className = 'tipbar on';
-        tiptext.innerHTML = '⚠️ 这个地址 ' + (loadMs / 1000).toFixed(2) + ' 秒就返回空内容 —— ' +
-          '通常是①网站禁止被 iframe 嵌入（X-Frame-Options / CSP）②域名或网络打不开。' +
-          '点顶部「新窗口」：能打开=被禁止嵌入（只能截图后走图片模式）；打不开=网址或网络问题';
-        if (btnMeasure) btnMeasure.style.display = 'none';
-        btnMgr.style.display = 'none';
-        btnSmart.style.display = 'none';
-        return;
-      }
+      if (watchTimer) { clearTimeout(watchTimer); watchTimer = null; }
+      var loadMs = Date.now() - loadT0;
+      loading.style.display = 'none';
+      frame.style.display = 'block';
+
+      var doc = sameOriginDoc(frame);
       if (doc) {
         st.cross = false;
         /* 同源：自动把 iframe 撑成整页高度，去掉内部滚动条，页与页之间直接接续 */
@@ -703,7 +914,13 @@ function addOne(inputUrl){
         if (total > 200) { st.h = total; st.top = 0; st.bot = 0; }
         repaint();
         startFit();     /* 图片/异步内容稍后到位，4~5 秒内持续校准，避免只撑到屏幕高 */
-        hookImages(doc);
+        var imgs0 = doc.getElementsByTagName('img');
+        for (var ii = 0; ii < imgs0.length; ii++) {
+          if (!imgs0[ii].__fitted) {
+            imgs0[ii].__fitted = 1;
+            imgs0[ii].addEventListener('load', autoFit);
+          }
+        }
         if (doc.getElementsByTagName('img').length > 0) {
           tipbar.className = 'tipbar on';
           tiptext.innerHTML = '同源代码页：已自动撑满整页高度（具体数值见左边「实测整页高」）；可逐张删图，或点「智能裁剪」裁到末图底部';
@@ -731,11 +948,20 @@ function addOne(inputUrl){
           : '跨域网站读不到内部结构：只能整页隐藏/删除，或用「高 / 上裁 / 下裁」手动裁掉多余区域';
         btnMgr.style.display = 'none';
         btnSmart.style.display = 'none';
+        /* 跨域读不到内容时，onload 快得不正常（不到 0.6 秒）基本是「秒开空内容」：
+           X-Frame-Options / CSP 禁止嵌入，或域名压根不通，浏览器这边表现一样，不断言是哪一种 */
+        if (loadMs < 600) {
+          showTip('这一页 ' + (Math.round(loadMs / 100) / 10) + ' 秒就返回空白（跨域读不到内容）：' +
+            '多半是对方不允许嵌入或域名不通。点「↻ 刷新这一页」重试，也可以先在新窗口打开确认');
+        }
       }
+
+      /* 标签标题跟着第一页：载入完就改一次，有的页面标题是稍后才设的，再补一次 */
+      syncTitle();
+      setTimeout(syncTitle, 1200);
     };
   }
 
-  repaint();          /* 建好就先给一块可见区域，边下边看 */
   count();
   applyUni();
   if (typeof updateTraffic === 'function') updateTraffic();
@@ -813,6 +1039,7 @@ function clr(){
   if(!confirm('确定清空全部？')) return;
   box.innerHTML = '';
   count();
+  syncTitle();
 }
 
 /* 统一滚动条 / 控制条开关 */
@@ -838,13 +1065,21 @@ function setBar(){
 /* 面板收起时，条目控制条（高/上裁/下裁）跟着隐藏；展开时一起恢复 */
 var __folded = false;
 var __seam = true;
+var __clickH = true;
 function syncBodyClass(){
   var bar = document.getElementById('chkBar');
   var cls = [];
   if (__seam) cls.push('seamless');
   if (bar && bar.checked) cls.push('showbar');
   if (__folded) cls.push('panelfold');
+  if (__clickH) cls.push('pickh');
   document.body.className = cls.join(' ');
+}
+/* 单击页面取高 开 / 关 */
+function setClickH(on){
+  __clickH = !!on;
+  syncBodyClass();
+  if (!__clickH) hEditClose();
 }
 
 setSeam(true);
@@ -900,13 +1135,23 @@ function updateTraffic(){
   }
 })();
 
-/* 回车：Ctrl+Enter 或 单行时回车即添加 */
-u.onkeydown = function(e){
-  if (e.keyCode == 13 && !e.shiftKey) {
-    go();
-    return false;
-  }
-};
+/* 小面板的按钮，以及什么时候自动收起 */
+(function(){
+  var el = document.getElementById('hEdit');
+  if (!el) return;
+  var xBtn = document.getElementById('heX');
+  var apBtn = document.getElementById('heApply');
+  var inp = document.getElementById('heIn');
+  if (xBtn) xBtn.onclick = hEditClose;
+  if (apBtn) apBtn.onclick = heApplyNow;
+  if (inp) inp.onkeydown = function(e){
+    if (e.keyCode == 13) { e.preventDefault(); heApplyNow(); return false; }
+  };
+  /* 滚动或窗口尺寸变了就收起，免得小面板和点击位置对不上 */
+  window.addEventListener('scroll', function(){ if (heCtx) hEditClose(); }, true);
+  window.addEventListener('resize', function(){ if (heCtx) hEditClose(); });
+  document.addEventListener('keydown', function(e){ if (e.keyCode == 27 && heCtx) hEditClose(); });
+})();
 </script>
 
 </body>
