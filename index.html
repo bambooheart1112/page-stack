@@ -74,30 +74,37 @@ iframe{width:100%;height:800px;border:0;display:block;background:#fff}
 .cut.top{top:0}
 .cut.bot{bottom:0}
 
-/* 单击这一页：盖一层透明捕捉层接点击（iframe 内部点不到），点完画一条蓝色虚线 */
-.hit{position:absolute;left:0;right:0;top:0;bottom:0;z-index:2;display:none;cursor:crosshair}
+/* 按住这一页 3 秒（松手取消）：盖一层透明捕捉层接触摸（iframe 内部点不到），取到位置画一条蓝色虚线 */
+.hit{position:absolute;left:0;right:0;top:0;bottom:0;z-index:2;display:none;cursor:crosshair;
+  touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 body.pickh .hit{display:block}
 .mk{position:absolute;left:0;right:0;height:0;border-top:2px dashed #2563eb;z-index:4;display:none;pointer-events:none}
 .mk span{position:absolute;right:10px;top:-24px;background:#2563eb;color:#fff;font-size:12px;line-height:1.6;
   padding:1px 8px;border-radius:5px;white-space:nowrap}
 
-/* 点击后浮出的小面板：显示当前高和点击处，可直接把「高」设过去 */
+/* 按住时的倒计时提示（跟着手指/鼠标走，松手就消失） */
+#holdTip{position:fixed;left:0;top:0;z-index:99999;display:none;pointer-events:none;
+  background:rgba(22,163,74,.92);color:#fff;font-size:13px;line-height:1.5;
+  padding:6px 12px;border-radius:8px;white-space:nowrap;box-shadow:0 4px 12px rgba(22,163,74,.35)}
+#holdTip b{font-size:17px;margin:0 3px;font-variant-numeric:tabular-nums}
+
+/* 取到位置后浮出的小面板：绿底、固定不动、不会自己消失，只有点「✕ 关闭」才收起 */
 #hEdit{position:fixed;left:0;top:0;z-index:99999;display:none;width:254px;max-width:calc(100vw - 16px);
-  background:#fff;border:2px solid #2563eb;border-radius:10px;padding:10px 12px;
-  box-shadow:0 10px 26px rgba(15,23,42,.28);font-size:13px;color:#334155}
+  background:#dcfce7;border:2px solid #16a34a;border-radius:10px;padding:10px 12px;
+  box-shadow:0 10px 26px rgba(22,163,74,.32);font-size:13px;color:#14532d}
 #hEdit .he-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-#hEdit .he-top b{color:#2563eb;font-size:14px}
-#hEdit .he-x{width:auto;margin:0 0 0 auto;padding:4px 10px;font-size:12px;font-weight:normal;
-  border-radius:6px;background:#6b7280}
-#hEdit .he-line{line-height:1.85;color:#64748b;font-size:12px}
-#hEdit .he-line b{color:#0f172a;font-size:15px;font-variant-numeric:tabular-nums}
+#hEdit .he-top b{color:#15803d;font-size:14px}
+#hEdit .he-x{width:auto;margin:0 0 0 auto;padding:9px 14px;font-size:13px;font-weight:normal;
+  border-radius:8px;background:#16a34a;color:#fff}
+#hEdit .he-line{line-height:1.85;color:#166534;font-size:12px}
+#hEdit .he-line b{color:#052e16;font-size:15px;font-variant-numeric:tabular-nums}
 #hEdit .he-put{display:flex;align-items:center;gap:6px;margin-top:8px}
-#hEdit .he-put span{font-size:12px;color:#64748b;flex-shrink:0}
-#hEdit .he-put input{width:82px;padding:7px 8px;font-size:16px;border:1px solid #cbd5e1;border-radius:6px}
-#hEdit .he-put input:focus{outline:none;border-color:#2563eb}
-#hEdit .he-put button{width:auto;margin:0;padding:8px 14px;font-size:14px;font-weight:bold;
-  border-radius:6px;background:#2563eb;flex-shrink:0}
-#hEdit .he-tip{margin-top:7px;font-size:11px;color:#94a3b8;line-height:1.5}
+#hEdit .he-put span{font-size:12px;color:#166534;flex-shrink:0}
+#hEdit .he-put input{width:82px;padding:7px 8px;font-size:16px;border:1px solid #86efac;border-radius:6px;background:#fff}
+#hEdit .he-put input:focus{outline:none;border-color:#16a34a}
+#hEdit .he-put button{width:auto;margin:0;padding:9px 15px;font-size:14px;font-weight:bold;
+  border-radius:6px;background:#16a34a;color:#fff;flex-shrink:0}
+#hEdit .he-tip{margin-top:7px;font-size:11px;color:#4d7c0f;line-height:1.5}
 
 .cropbar{padding:8px 10px;background:#f8fafc;font-size:12px;color:#555;display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid #e5e7eb}
 .cropbar span.cf{display:flex;align-items:center;gap:4px}
@@ -169,11 +176,11 @@ body.panelfold .mk{display:none !important}
     <label><input type="checkbox" id="chkSeam" checked onchange="setSeam(this.checked)"> 无缝拼接（去边框/间距/控制条）</label>
     <label><input type="checkbox" id="chkUni" checked onchange="applyUni()"> 统一滚动条（网页内部不滚动）</label>
     <label><input type="checkbox" id="chkBar" checked onchange="setBar(this.checked)"> 显示条目控制条</label>
-    <label><input type="checkbox" id="chkClickH" checked onchange="setClickH(this.checked)"> 单击页面看高度、直接设「高」</label>
+    <label><input type="checkbox" id="chkClickH" checked onchange="setClickH(this.checked)"> 按住页面 3 秒看高度、直接设「高」</label>
   </div>
   <div class="hint">图片地址（.jpg/.png/.gif/.webp 结尾）自动按图片显示，每张单独删除/隐藏；网页若与工具同源，可用「图片管理」逐张删除<br>
-  单击网页任意位置：浮出这一页的「当前高」和「点击处」是多少 px（蓝虚线标出位置），填进「高」点「应用」，这一页就显示到那里；点「收起」后这个功能关闭<br>
-  某一页没加载出来（一直空白、超过 8 秒还没好、几秒就空返回）：点该页黄条上的「↻ 刷新这一页」（无缝模式下标题栏是隐藏的，用这个），只重载这一页，其它页不动<br>
+  按住网页任意位置 3 秒不动（中途松手或挪动就取消）：浮出这一页的「当前高」和「按住处」是多少 px（蓝虚线标出位置），填进「高」点「应用」，这一页就显示到那里；这个悬浮窗是绿底、固定不动的，不会自己消失，只有点「✕ 关闭」才收起；点右上「收起」后这个功能关闭<br>
+  不会再卡在「加载中」：页面一边下就一边显示出来，同源页会实时报「图片到位 x / y 张」，全部到位或最多等 1 分钟就自动收起这行；跨域页看不到进度，等 5 秒自动收起。跨域页若一直白屏，多半是网站禁止被嵌入（X-Frame-Options / CSP）：点该页黄条上的「↻ 刷新这一页」（无缝模式下标题栏是隐藏的，用这个），只重载这一页，其它页不动<br>
   标签标题会自动换成「第一页的网页名称」：同源页面直接读它的标题，跨域读不到就用域名；删掉第一页会换成新的第一页，全部清空则恢复成「网页堆叠器」<br>
   无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效<br>
   统一滚动条：每个网页各自实测整页高度（同源可直接读到，结果会显示在条目的「实测整页高」里并填入「高」作为默认值，你可以自己改）；跨域读不到，需自己填「高」</div>
@@ -195,12 +202,14 @@ body.panelfold .mk{display:none !important}
 </div>
 
 <div id="hEdit">
-  <div class="he-top"><b id="heTitle">第1项</b><button class="he-x" id="heX">关闭</button></div>
+  <div class="he-top"><b id="heTitle">第1项</b><button class="he-x" id="heX">✕ 关闭</button></div>
   <div class="he-line">当前高 <b id="heCur">--</b> px</div>
-  <div class="he-line">点击处 <b id="hePoint">--</b> px</div>
+  <div class="he-line">按住处 <b id="hePoint">--</b> px</div>
   <div class="he-put"><span>高</span><input id="heIn" type="number" min="200" step="10"><span>px</span><button id="heApply">应用</button></div>
-  <div class="he-tip">点「应用」后，这一页就显示到这条虚线为止</div>
+  <div class="he-tip">点「应用」后，这一页就显示到这条虚线为止；这个窗口固定悬浮，只有点「✕ 关闭」才收起</div>
 </div>
+
+<div id="holdTip">按住不动 <b>3</b> 秒取高 · 松手取消</div>
 
 <script>
 var box = document.getElementById('box');
@@ -433,7 +442,7 @@ function hEditClose(){
   heCtx = null;
 }
 
-function hEditOpen(ctx, x, y){
+function hEditOpen(ctx, x, y, noFocus){
   var el = document.getElementById('hEdit');
   if (!el) return;
   heCtx = ctx;
@@ -457,8 +466,11 @@ function hEditOpen(ctx, x, y){
   if (T < 8) T = 8;
   el.style.left = L + 'px';
   el.style.top = T + 'px';
-  try { inp.focus(); } catch (err) {}
-  try { inp.select(); } catch (err) {}
+  /* 鼠标点的：直接聚焦「高」并全选，方便马上改；手指按的：不弹软键盘，免得键盘把面板顶走 */
+  if (!noFocus) {
+    try { inp.focus(); } catch (err) {}
+    try { inp.select(); } catch (err) {}
+  }
 }
 
 function heApplyNow(){
@@ -472,8 +484,13 @@ function heApplyNow(){
 }
 
 function addOne(inputUrl){
-  var url = inputUrl;
-  if(url.indexOf('://') < 0) url = 'https://' + url;
+  var url = String(inputUrl).replace(/^\s+|\s+$/g, '');
+  if (url.indexOf('://') < 0) {
+    /* 内网 IP / localhost 绝大多数只认 http：补 http，别让 https 把连接卡在那儿 */
+    var hostName = url.split('/')[0].split('?')[0].split(':')[0];
+    var isLan = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostName) || hostName.toLowerCase() === 'localhost';
+    url = (isLan ? 'http://' : 'https://') + url;
+  }
 
   var idx = box.children.length + 1;
   var isImg = isImageUrl(url);
@@ -505,12 +522,12 @@ function addOne(inputUrl){
   } else {
     bodyHtml =
       '<div class="body">' +
-        '<div class="loading">⏳ 加载中…</div>' +
+        '<div class="loading" title="点一下收起这行提示，直接看页面">⏳ 加载中…（页面已经在下，点这行可先看）</div>' +
         '<div class="tipbar"><span class="tiptext"></span><button class="b-retry">↻ 刷新这一页</button><button class="b-imgmgr">图片管理</button></div>' +
         '<div class="crop">' +
           '<div class="cut top"></div>' +
           '<div class="cut bot"></div>' +
-          '<iframe src="' + esc(url) + '" style="display:none;"></iframe>' +
+          '<iframe src="' + esc(url) + '" style="display:block;"></iframe>' +
           '<div class="hit"></div>' +
           '<div class="mk"><span></span></div>' +
         '</div>' +
@@ -619,18 +636,31 @@ function addOne(inputUrl){
 
     item._repaint = repaint;
 
-    /* 单击这一页的任意位置：先算出点击处离这一页顶端多少 px，浮出小面板；
-       面板里填「高」点「应用」，这一页就截到那条蓝虚线为止。
-       面板收起（body.panelfold）或关掉开关（body 上没有 pickh）时，捕捉层不接点击 */
-    hitEl.onclick = function(ev){
-      if (__folded || !__clickH) return;
+    /* 按住这一页 3 秒（手指/鼠标按住不动，中途松手或挪动就取消）：算出按住处离这一页顶端多少 px，
+       浮出小面板；面板里填「高」点「应用」，这一页就截到那条蓝虚线为止。
+       手机轻点不再误触发，也不会出现「刚弹出来就没了」；面板固定悬浮，只有点「✕ 关闭」才收起。
+       面板收起（body.panelfold）或关掉开关（body 上没有 pickh）时，捕捉层不接触摸 */
+    function placeFloat(el, x, y, dx, dy){
+      var vw = window.innerWidth || 360, vh = window.innerHeight || 640;
+      var w = el.offsetWidth || 200, h = el.offsetHeight || 36;
+      var L = x + (dx || 14), T = y + (dy || 18);
+      if (L + w > vw - 8) L = vw - w - 8;
+      if (L < 8) L = 8;
+      if (T + h > vh - 8) T = y - h - (dy || 18);
+      if (T < 8) T = 8;
+      el.style.left = L + 'px';
+      el.style.top = T + 'px';
+    }
+
+    /* 按住到了：画虚线、开面板 */
+    function openAtPoint(cx, cy){
       var vr = cropEl.getBoundingClientRect();
-      var y = Math.max(0, Math.round(ev.clientY - vr.top));
+      var y = Math.max(0, Math.round(cy - vr.top));
       var point = Math.round((st.top || 0) + y);
       if (mkEl) {
         mkEl.style.top = y + 'px';
         mkEl.style.display = 'block';
-        mkLabel.textContent = '点击处 ' + point + ' px';
+        mkLabel.textContent = '按住处 ' + point + ' px';
         mkLabel.style.top = (y < 26) ? '4px' : '-24px';
       }
       hEditOpen({
@@ -643,49 +673,192 @@ function addOne(inputUrl){
           st.bot = 0;          /* 终点由这条线定，下裁归零，页尾正好停在这里 */
           repaint();
           tipbar.className = 'tipbar on';
-          tiptext.innerHTML = '「高」已设为 ' + st.h + ' px：这一页显示到点击处为止' +
+          tiptext.innerHTML = '「高」已设为 ' + st.h + ' px：这一页显示到按住处为止' +
             (st.top > 0 ? '（上面 ' + st.top + ' px 已裁掉）' : '');
         }
-      }, ev.clientX, ev.clientY);
-    };
+      }, cx, cy, holdTouch);
+    }
+
+    var HOLD_MS = 3000;     /* 按住多久取高 */
+    var HOLD_MOVE = 14;     /* 挪动超过这么多 px 就当滑动，取消 */
+    var holdTimer = null, holdTick = null, holdX = 0, holdY = 0, holdTouch = false;
+
+    function holdCancel(){
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      if (holdTick) { clearInterval(holdTick); holdTick = null; }
+      var t = document.getElementById('holdTip');
+      if (t) t.style.display = 'none';
+    }
+
+    function holdBegin(ev){
+      if (__folded || !__clickH) return;
+      if (ev.pointerType === 'mouse' && (ev.button || 0) !== 0) return;
+      holdCancel();
+      holdX = ev.clientX; holdY = ev.clientY;
+      holdTouch = (ev.pointerType === 'touch') || !!ev.touches;
+      var tip = document.getElementById('holdTip');
+      if (tip) {
+        tip.innerHTML = '按住不动 <b>3</b> 秒取高 · 松手取消';
+        tip.style.display = 'block';
+        placeFloat(tip, holdX, holdY, 10, 20);
+      }
+      var left = HOLD_MS;
+      holdTick = setInterval(function(){
+        left -= 100;
+        if (tip && left > 0) tip.innerHTML = '按住不动 <b>' + Math.ceil(left / 1000) + '</b> 秒取高 · 松手取消';
+      }, 100);
+      holdTimer = setTimeout(function(){
+        holdTimer = null;
+        if (holdTick) { clearInterval(holdTick); holdTick = null; }
+        if (tip) tip.style.display = 'none';
+        openAtPoint(holdX, holdY);
+      }, HOLD_MS);
+    }
+
+    function holdMove(ev){
+      if (!holdTimer) return;
+      if (Math.abs(ev.clientX - holdX) > HOLD_MOVE || Math.abs(ev.clientY - holdY) > HOLD_MOVE) holdCancel();
+    }
+
+    function holdEnd(){ holdCancel(); }     /* 不到 3 秒就松手：取消，不弹窗 */
+
+    if (window.PointerEvent){
+      hitEl.addEventListener('pointerdown', holdBegin);
+      hitEl.addEventListener('pointermove', holdMove);
+      hitEl.addEventListener('pointerup', holdEnd);
+      hitEl.addEventListener('pointercancel', holdEnd);
+      hitEl.addEventListener('pointerleave', holdEnd);
+    } else {
+      hitEl.addEventListener('touchstart', holdBegin, { passive: true });
+      hitEl.addEventListener('touchmove', holdMove, { passive: true });
+      hitEl.addEventListener('touchend', holdEnd);
+      hitEl.addEventListener('touchcancel', holdEnd);
+      hitEl.addEventListener('mousedown', holdBegin);
+    }
+    hitEl.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 
     /* ---------- 这一页加载失败时的自救：只刷新这一页，不动其它页 ---------- */
     var watchTimer = null;   /* 8 秒还没载入 → 提示可以重试 */
     var loadT0 = 0;          /* 这一次加载的起始时间，用耗时判断是不是「秒开空内容」 */
     var reloading = false;   /* 刷新过程中的中间态（先清空再载入），这期间的 onload 不算 */
+    var frameReady = false;  /* 这一页的 onload 到过没有 */
+    var loadTimer = null;    /* 「边下边看」的心跳 */
+    var loadStart = Date.now();
+    var loadingHidden = false;
 
     /* 黄条上的提示文案（「↻ 刷新这一页」按钮一直都在，随时可点） */
     function showTip(msg){
       tipbar.className = 'tipbar on';
       tiptext.innerHTML = msg;
     }
+
+    /* 页面已经显示出来了：把「加载中」这行收掉 */
+    function finishLoading(){
+      if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
+      if (loading) loading.style.display = 'none';
+      loadingHidden = true;
+      frame.style.display = 'block';
+    }
+
+    /* 每张图挂上「到位即重测高度」，并强制立刻下载（图多的页面 onload 要等很久，别等它） */
+    function hookImages(d){
+      var imgs = d.getElementsByTagName('img');
+      for (var i = 0; i < imgs.length; i++){
+        var im = imgs[i];
+        try { if ('loading' in im) im.loading = 'eager'; } catch (e) {}
+        if (!im.__fitted){
+          im.__fitted = 1;
+          im.addEventListener('load', autoFit);
+          im.addEventListener('error', autoFit);
+        }
+      }
+      return imgs;
+    }
+
+    /* iframe 刚建好时 contentDocument 是个 about:blank 空文档，别把它当成「页面已显示」 */
+    function liveDoc(){
+      var d = sameOriginDoc(frame);
+      if (!d) return null;
+      try { if (String(d.location.href || '') === 'about:blank') return null; } catch (e) { return null; }
+      return d;
+    }
+
+    /* 心跳 600ms：不等 onload。同源能读到文档就报图片进度并边下边撑高；
+       跨域读不到进度，就限时把「加载中」收掉，页面自己会一点点画出来 */
+    function loaderTick(){
+      var sec = Math.round((Date.now() - loadStart) / 1000);
+      var d = liveDoc();
+      if (!loadingHidden) {
+        if (d && d.getElementsByTagName) {
+          frame.style.display = 'block';
+          var imgs = hookImages(d);
+          var total = imgs.length, ok = 0;
+          for (var i = 0; i < total; i++){
+            if (imgs[i].complete && imgs[i].naturalWidth > 0) ok++;
+          }
+          loading.textContent = total
+            ? '⏳ 页面已显示 · 图片到位 ' + ok + ' / ' + total + ' 张 · 已等 ' + sec + ' 秒（点这行收起提示）'
+            : '⏳ 页面已显示 · 已等 ' + sec + ' 秒（点这行收起提示）';
+          if (!userSetH) autoFit();
+          if (total === 0 || ok >= total) finishLoading();
+        } else {
+          loading.textContent = '⏳ 已等 ' + sec + ' 秒（看不到加载进度，内容会自己一点点出来；点这行先收起提示）';
+          if (frameReady || sec >= 5) finishLoading();
+        }
+      } else {
+        if (!userSetH) autoFit();
+      }
+      if (sec >= 60) finishLoading();   /* 兜底：一分钟一定收掉，绝不永久卡在「加载中」 */
+    }
+
+    function startLoadWatch(){
+      loadStart = Date.now();
+      frameReady = false;
+      loadingHidden = false;
+      if (loading) {
+        loading.style.display = '';
+        loading.textContent = '⏳ 加载中…（页面已经在下，点这行可先看）';
+      }
+      frame.style.display = 'block';
+      if (loadTimer) clearInterval(loadTimer);
+      loadTimer = setInterval(loaderTick, 600);
+      loaderTick();
+    }
+
     function startWatch(){
       if (watchTimer) clearTimeout(watchTimer);
       loadT0 = Date.now();
+      startLoadWatch();
       watchTimer = setTimeout(function(){
+        if (frameReady) return;
+        var d = liveDoc();
+        if (d && d.body) return;        /* 同源已经读得到内容，说明正在显示，不用提示 */
         showTip('这一页 8 秒还没加载出来（域名不通、网太慢、对方不让嵌入都会这样）。' +
           '点「↻ 刷新这一页」只重载这一页，其它页不受影响');
       }, 8000);
     }
+
     function reloadPage(){
-      if (fitTimer) clearInterval(fitTimer);
+      if (fitTimer) { clearInterval(fitTimer); fitTimer = null; }
+      if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
       if (watchTimer) { clearTimeout(watchTimer); watchTimer = null; }
       tipbar.className = 'tipbar';
       tiptext.innerHTML = '';
-      loading.textContent = '⏳ 正在重新加载…';
       loading.style.display = '';
+      loading.textContent = '⏳ 正在重新加载…';
+      loadingHidden = false;
       frame.style.display = 'none';
       reloading = true;
       frame.setAttribute('src', 'about:blank');       /* 先清空，免得浏览器拿上一次的旧内容 */
       setTimeout(function(){
         frame.setAttribute('src', url);
         reloading = false;
+        frame.style.display = 'block';
         startWatch();
       }, 90);
     }
     if (refreshBtn) refreshBtn.onclick = reloadPage;
     if (retryBtn) retryBtn.onclick = reloadPage;
-    startWatch();
 
     /* 同源页自动校准高度：图片是异步加载的，刚 onload 时可能还没撑开，
        所以在加载后几秒内反复测几次，取到真实整页高度；用户手动改过就停手 */
@@ -901,27 +1074,22 @@ function addOne(inputUrl){
         if (blankCheck && String(blankCheck.location.href || '') === 'about:blank') return;
       } catch (err) {}
 
+      frameReady = true;
       if (watchTimer) { clearTimeout(watchTimer); watchTimer = null; }
       var loadMs = Date.now() - loadT0;
-      loading.style.display = 'none';
       frame.style.display = 'block';
 
       var doc = sameOriginDoc(frame);
       if (doc) {
+        finishLoading();
         st.cross = false;
         /* 同源：自动把 iframe 撑成整页高度，去掉内部滚动条，页与页之间直接接续 */
         var total = docHeight(doc);
         if (total > 200) { st.h = total; st.top = 0; st.bot = 0; }
         repaint();
         startFit();     /* 图片/异步内容稍后到位，4~5 秒内持续校准，避免只撑到屏幕高 */
-        var imgs0 = doc.getElementsByTagName('img');
-        for (var ii = 0; ii < imgs0.length; ii++) {
-          if (!imgs0[ii].__fitted) {
-            imgs0[ii].__fitted = 1;
-            imgs0[ii].addEventListener('load', autoFit);
-          }
-        }
-        if (doc.getElementsByTagName('img').length > 0) {
+        var imgs0 = hookImages(doc);
+        if (imgs0.length > 0) {
           tipbar.className = 'tipbar on';
           tiptext.innerHTML = '同源代码页：已自动撑满整页高度（具体数值见左边「实测整页高」）；可逐张删图，或点「智能裁剪」裁到末图底部';
           btnMgr.onclick = function(){
@@ -937,6 +1105,7 @@ function addOne(inputUrl){
           btnMgr.style.display = 'none';
         }
       } else {
+        finishLoading();
         st.cross = true;
         repaint();
         if (btnMeasure) btnMeasure.style.display = 'none';
@@ -946,13 +1115,23 @@ function addOne(inputUrl){
         tiptext.innerHTML = (uniOn && uniOn.checked)
           ? '跨域页面：读不到整页高度，当前 ' + st.h + 'px（' + why + '）。改「高」即可，改完会按域名记住，下次自动套用'
           : '跨域网站读不到内部结构：只能整页隐藏/删除，或用「高 / 上裁 / 下裁」手动裁掉多余区域';
+        tiptext.innerHTML += '。这里若一直是白屏，多半是网站禁止被嵌入（X-Frame-Options / CSP）或域名不通：点「↻ 刷新这一页」重试，先用浏览器新窗口打开原址确认能不能访问';
         btnMgr.style.display = 'none';
         btnSmart.style.display = 'none';
-        /* 跨域读不到内容时，onload 快得不正常（不到 0.6 秒）基本是「秒开空内容」：
-           X-Frame-Options / CSP 禁止嵌入，或域名压根不通，浏览器这边表现一样，不断言是哪一种 */
-        if (loadMs < 600) {
-          showTip('这一页 ' + (Math.round(loadMs / 100) / 10) + ' 秒就返回空白（跨域读不到内容）：' +
-            '多半是对方不允许嵌入或域名不通。点「↻ 刷新这一页」重试，也可以先在新窗口打开确认');
+        /* 跨域读不到内容，判断不出「被禁止嵌入」还是「网慢」，所以不瞎报；
+           只有内网 IP/localhost 的 https 打不开时，才自动换 http 再试一次（这类设备基本只认 http） */
+        var isLanHost = /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || String(host).toLowerCase() === 'localhost';
+        if (isLanHost && loadMs < 600 && /^https:\/\//i.test(url) && !st.triedHttp) {
+          st.triedHttp = true;
+          var httpUrl = url.replace(/^https:/i, 'http:');
+          url = httpUrl;
+          showTip('https 打不开（多半是证书过期，或这台设备只认 http），已自动换成 http 重试：' + esc(httpUrl));
+          frame.setAttribute('src', 'about:blank');
+          setTimeout(function(){
+            frame.setAttribute('src', httpUrl);
+            startWatch();
+          }, 90);
+          return;
         }
       }
 
@@ -960,6 +1139,13 @@ function addOne(inputUrl){
       syncTitle();
       setTimeout(syncTitle, 1200);
     };
+
+    /* 建好就先给一块可见区域、边下边看：不等 onload 也能看到内容 */
+    repaint();
+    loading.style.cursor = 'pointer';
+    loading.title = '点一下收起这行提示，直接看页面';
+    loading.onclick = function(){ finishLoading(); };
+    startWatch();
   }
 
   count();
@@ -1135,7 +1321,7 @@ function updateTraffic(){
   }
 })();
 
-/* 小面板的按钮，以及什么时候自动收起 */
+/* 小面板的按钮：面板固定悬浮，只有点「✕ 关闭」或按 Esc 才收起（滚动、缩放都不再自动关） */
 (function(){
   var el = document.getElementById('hEdit');
   if (!el) return;
@@ -1147,9 +1333,6 @@ function updateTraffic(){
   if (inp) inp.onkeydown = function(e){
     if (e.keyCode == 13) { e.preventDefault(); heApplyNow(); return false; }
   };
-  /* 滚动或窗口尺寸变了就收起，免得小面板和点击位置对不上 */
-  window.addEventListener('scroll', function(){ if (heCtx) hEditClose(); }, true);
-  window.addEventListener('resize', function(){ if (heCtx) hEditClose(); });
   document.addEventListener('keydown', function(e){ if (e.keyCode == 27 && heCtx) hEditClose(); });
 })();
 </script>
