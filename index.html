@@ -16,6 +16,7 @@ body{padding:12px;background:#f4f4f4}
 #panelTop{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 #panelTop h3{font-size:17px}
 #n{background:#2563eb;color:#fff;border-radius:10px;padding:2px 10px;font-size:13px}
+.ver{font-size:12px;color:#64748b;font-weight:normal;margin-left:2px}
 #traffic{margin-left:auto;font-size:12px;color:#0f766e;background:#ccfbf1;border-radius:10px;
   padding:4px 9px;white-space:nowrap;cursor:pointer;flex-shrink:0}
 
@@ -114,6 +115,8 @@ body.pickh .hit{display:block}
 .cropbar button{width:auto;padding:10px 14px;font-size:13px;margin:0;font-weight:normal;border-radius:6px;background:#2563eb}
 .cropbar .b-warm{background:#7c3aed}
 .cropbar .b-plus{background:#0891b2}
+.cropbar .b-auto{background:#0d9488}
+.cropbar .b-auto.on{background:#dc2626}
 .c-range{font-size:11px;color:#6b7280;flex-basis:100%}
 /* 无缝拼接：去掉条目边框、外边距、图片内边距和控制条，让多页看起来是同一页 */
 body.seamless .item{margin:0;border:0;border-radius:0}
@@ -162,7 +165,7 @@ body.panelfold .mk{display:none !important}
 
 <div id="panel">
   <div id="panelTop">
-    <h3>📑 网页堆叠器 <span id="n">0</span></h3>
+    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v1.4</span></h3>
     <span id="traffic" title="统计本次打开页面实际下载的字节（本页 + 同源网页）；跨域网页浏览器不允许读，会标注未计">流量 --</span>
     <button id="btnFold" onclick="foldPanel()">收起 ✕</button>
   </div>
@@ -179,8 +182,8 @@ body.panelfold .mk{display:none !important}
     <label><input type="checkbox" id="chkClickH" checked onchange="setClickH(this.checked)"> 按住页面 3 秒看高度、直接设「高」</label>
   </div>
   <div class="hint">图片地址（.jpg/.png/.gif/.webp 结尾）自动按图片显示，每张单独删除/隐藏；网页若与工具同源，可用「图片管理」逐张删除<br>
-  按住网页任意位置 3 秒不动（中途松手或挪动就取消）：浮出这一页的「当前高」和「按住处」是多少 px（蓝虚线标出位置），填进「高」点「应用」，这一页就显示到那里；这个悬浮窗是绿底、固定不动的，不会自己消失，只有点「✕ 关闭」才收起；点右上「收起」后这个功能关闭<br>
-  不会再卡在「加载中」：页面一边下就一边显示出来，同源页会实时报「图片到位 x / y 张」，全部到位或最多等 1 分钟就自动收起这行；跨域页看不到进度，等 5 秒自动收起。跨域页若一直白屏，多半是网站禁止被嵌入（X-Frame-Options / CSP）：点该页黄条上的「↻ 刷新这一页」（无缝模式下标题栏是隐藏的，用这个），只重载这一页，其它页不动<br>
+  按住网页任意位置 3 秒不动（中途松手或明显拖动就取消），或者<b>双击</b>这一页，都会浮出这一页的「当前高」和「按住处」是多少 px（蓝虚线标出位置）；手机长按若被系统菜单抢走就用双击。填进「高」点「应用」，这一页就显示到那里；这个悬浮窗是绿底、固定不动的，不会自己消失，只有点「✕ 关闭」才收起；点右上「收起」后这个功能关闭<br>
+  不会再卡在「加载中」：页面一边下就一边显示出来，「加载中」这行最多只留 1.5 秒就自动收起；同源页会在「实测整页高」旁边实时显示「图 x / y」，图特别多（300 张以上）时分批放行，不会把请求一次堵死，撑高也是节流合并的，1000 张图也不卡。跨域页若一直白屏，多半是网站禁止被嵌入（X-Frame-Options / CSP）：点该页黄条上的「↻ 刷新这一页」（无缝模式下标题栏是隐藏的，用这个），只重载这一页，其它页不动<br>
   标签标题会自动换成「第一页的网页名称」：同源页面直接读它的标题，跨域读不到就用域名；删掉第一页会换成新的第一页，全部清空则恢复成「网页堆叠器」<br>
   无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效<br>
   统一滚动条：每个网页各自实测整页高度（同源可直接读到，结果会显示在条目的「实测整页高」里并填入「高」作为默认值，你可以自己改）；跨域读不到，需自己填「高」</div>
@@ -191,6 +194,7 @@ body.panelfold .mk{display:none !important}
 <datalist id="hpresets">
   <option>1000</option><option>1200</option><option>1400</option>
   <option>1600</option><option>2000</option><option>2400</option><option>3000</option>
+  <option>5000</option><option>8000</option><option>12000</option><option>20000</option><option>50000</option>
 </datalist>
 
 <div id="imgMgr">
@@ -538,6 +542,7 @@ function addOne(inputUrl){
           '<span class="cf"><i>下裁</i><input class="c-bot" type="number" min="0" step="10" value="0">px</span>' +
           '<button class="b-apply">确认裁剪</button>' +
           '<button class="b-plus">+2000 加高</button>' +
+          '<button class="b-auto">⏫ 自动加高</button>' +
           '<button class="b-warm">全量预热（同源）</button>' +
           '<button class="b-measure">重测高度</button>' +
           '<button class="b-smart">智能裁剪（同源）</button>' +
@@ -602,6 +607,7 @@ function addOne(inputUrl){
     var btnMeasure = item.querySelector('.b-measure');
     var btnApply = item.querySelector('.b-apply');
     var btnPlus = item.querySelector('.b-plus');
+    var btnAuto = item.querySelector('.b-auto');
     var btnWarm = item.querySelector('.b-warm');
     var rangeEl = item.querySelector('.c-range');
     var barEl = item.querySelector('.cropbar');
@@ -624,7 +630,7 @@ function addOne(inputUrl){
       inpH.value = st.h;
       inpTop.value = st.top;
       inpBot.value = st.bot;
-      if (meas) meas.textContent = st.h + 'px' + (st.cross ? '（估算）' : '');
+      if (meas) meas.textContent = st.h + 'px' + (st.cross ? '（估算）' : '') + (imgProgress ? ' · ' + imgProgress : '');
       if (cutTopEl) cutTopEl.style.display = 'none';
       if (cutBotEl) cutBotEl.style.display = 'none';
       if (rangeEl) {
@@ -680,8 +686,9 @@ function addOne(inputUrl){
     }
 
     var HOLD_MS = 3000;     /* 按住多久取高 */
-    var HOLD_MOVE = 14;     /* 挪动超过这么多 px 就当滑动，取消 */
-    var holdTimer = null, holdTick = null, holdX = 0, holdY = 0, holdTouch = false;
+    var HOLD_MOVE = 40;     /* 安卓手指会抖，移动超过 40px 才算滑动取消 */
+    var holdTimer = null, holdTick = null, holdX = 0, holdY = 0, holdTouch = false, holdCtxMenu = false;
+    var lastTapAt = 0, lastTapX = 0, lastTapY = 0;
 
     function holdCancel(){
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
@@ -690,12 +697,10 @@ function addOne(inputUrl){
       if (t) t.style.display = 'none';
     }
 
-    function holdBegin(ev){
+    function holdStart(cx, cy, touch){
       if (__folded || !__clickH) return;
-      if (ev.pointerType === 'mouse' && (ev.button || 0) !== 0) return;
       holdCancel();
-      holdX = ev.clientX; holdY = ev.clientY;
-      holdTouch = (ev.pointerType === 'touch') || !!ev.touches;
+      holdX = cx; holdY = cy; holdTouch = !!touch; holdCtxMenu = false;
       var tip = document.getElementById('holdTip');
       if (tip) {
         tip.innerHTML = '按住不动 <b>3</b> 秒取高 · 松手取消';
@@ -715,27 +720,61 @@ function addOne(inputUrl){
       }, HOLD_MS);
     }
 
-    function holdMove(ev){
+    /* ---- 触摸（安卓 Edge / Chrome）：以 touch 事件为准，不看 pointer 事件 ---- */
+    hitEl.addEventListener('touchstart', function(ev){
+      if (__folded || !__clickH) return;
+      if (ev.touches.length !== 1) { holdCancel(); return; }
+      var t = ev.touches[0];
+      var now = Date.now();
+      /* 双指以外：双击也能取高，万一路由被系统长按菜单抢走，这是后备路径 */
+      if (now - lastTapAt < 320 &&
+          Math.abs(t.clientX - lastTapX) < 40 && Math.abs(t.clientY - lastTapY) < 40) {
+        lastTapAt = 0;
+        holdCancel();
+        openAtPoint(t.clientX, t.clientY);
+        return;
+      }
+      lastTapAt = now; lastTapX = t.clientX; lastTapY = t.clientY;
+      holdStart(t.clientX, t.clientY, true);
+    }, { passive: true });
+
+    hitEl.addEventListener('touchmove', function(ev){
       if (!holdTimer) return;
-      if (Math.abs(ev.clientX - holdX) > HOLD_MOVE || Math.abs(ev.clientY - holdY) > HOLD_MOVE) holdCancel();
-    }
+      var t = ev.touches[0];
+      if (!t) return;
+      if (Math.max(Math.abs(t.clientX - holdX), Math.abs(t.clientY - holdY)) > HOLD_MOVE) holdCancel();
+    }, { passive: true });
 
-    function holdEnd(){ holdCancel(); }     /* 不到 3 秒就松手：取消，不弹窗 */
+    hitEl.addEventListener('touchend', function(){
+      if (holdTimer) holdCancel();        /* 不到 3 秒松手：取消，不弹窗 */
+    });
 
-    if (window.PointerEvent){
-      hitEl.addEventListener('pointerdown', holdBegin);
-      hitEl.addEventListener('pointermove', holdMove);
-      hitEl.addEventListener('pointerup', holdEnd);
-      hitEl.addEventListener('pointercancel', holdEnd);
-      hitEl.addEventListener('pointerleave', holdEnd);
-    } else {
-      hitEl.addEventListener('touchstart', holdBegin, { passive: true });
-      hitEl.addEventListener('touchmove', holdMove, { passive: true });
-      hitEl.addEventListener('touchend', holdEnd);
-      hitEl.addEventListener('touchcancel', holdEnd);
-      hitEl.addEventListener('mousedown', holdBegin);
-    }
-    hitEl.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    /* 安卓把长按交给系统时会发 touchcancel/pointercancel：这里一律不清计时，继续等满 3 秒 */
+    hitEl.addEventListener('touchcancel', function(){ /* 故意什么都不做 */ });
+    hitEl.addEventListener('pointercancel', function(){ /* 故意什么都不做 */ });
+
+    /* ---- 鼠标：按住不动也会弹 ---- */
+    hitEl.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      holdStart(e.clientX, e.clientY, false);
+    });
+    window.addEventListener('mousemove', function(e){
+      if (!holdTimer || holdTouch) return;
+      if (Math.abs(e.clientX - holdX) > 12 || Math.abs(e.clientY - holdY) > 12) holdCancel();
+    });
+    window.addEventListener('mouseup', function(){ if (holdTimer && !holdTouch) holdCancel(); });
+
+    /* 按住期间页面真的滚动了（说明是在滑动）就取消 */
+    window.addEventListener('scroll', function(){ if (holdTimer) holdCancel(); }, true);
+
+    /* 安卓 / Edge 的长按菜单（复制、选择、放大镜）全部挡掉，并把「发生过菜单」记下来 */
+    document.addEventListener('contextmenu', function(e){
+      var cls = document.body ? document.body.className : '';
+      if (cls.indexOf('pickh') < 0) return;
+      holdCtxMenu = true;
+      e.preventDefault();
+      return false;
+    }, true);
 
     /* ---------- 这一页加载失败时的自救：只刷新这一页，不动其它页 ---------- */
     var watchTimer = null;   /* 8 秒还没载入 → 提示可以重试 */
@@ -743,8 +782,12 @@ function addOne(inputUrl){
     var reloading = false;   /* 刷新过程中的中间态（先清空再载入），这期间的 onload 不算 */
     var frameReady = false;  /* 这一页的 onload 到过没有 */
     var loadTimer = null;    /* 「边下边看」的心跳 */
+    var hideTimer = null;    /* 「加载中」这行的倒计时，到点必收 */
     var loadStart = Date.now();
     var loadingHidden = false;
+    var imgProgress = '';    /* 「图 x/y」，跟着「实测整页高」一起显示 */
+    var eagerQueue = [];     /* 图特别多时，没放行的图排这里，分批强制下载 */
+    var EAGER_BATCH = 100;   /* 每 0.6 秒放行一批：1000 张图也不会把请求队列一次堵死 */
 
     /* 黄条上的提示文案（「↻ 刷新这一页」按钮一直都在，随时可点） */
     function showTip(msg){
@@ -752,27 +795,48 @@ function addOne(inputUrl){
       tiptext.innerHTML = msg;
     }
 
-    /* 页面已经显示出来了：把「加载中」这行收掉 */
-    function finishLoading(){
-      if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
+    /* 只收掉「加载中」那行，心跳继续跑（同源还要接着分批放图、接着撑高） */
+    function hideLoading(){
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
       if (loading) loading.style.display = 'none';
       loadingHidden = true;
       frame.style.display = 'block';
     }
 
-    /* 每张图挂上「到位即重测高度」，并强制立刻下载（图多的页面 onload 要等很久，别等它） */
+    /* 彻底收工：心跳停掉，把那行字收掉；进度字保留成最终值（比如「图 1000/1000」） */
+    function stopWatch(){
+      if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
+      if (meas) meas.textContent = st.h + 'px' + (st.cross ? '（估算）' : '') + (imgProgress ? ' · ' + imgProgress : '');
+      hideLoading();
+    }
+
+    /* 图片只挂一次「到位即重测」；图特别多（>300 张）时不一次全放，排队分批强制下载，
+       否则 1000 张同时甩出去，浏览器排队几十分钟，看着就像「一直在加载」 */
     function hookImages(d){
       var imgs = d.getElementsByTagName('img');
+      var eagerAll = imgs.length <= 300;
       for (var i = 0; i < imgs.length; i++){
         var im = imgs[i];
-        try { if ('loading' in im) im.loading = 'eager'; } catch (e) {}
-        if (!im.__fitted){
-          im.__fitted = 1;
-          im.addEventListener('load', autoFit);
-          im.addEventListener('error', autoFit);
-        }
+        if (im.__fitted) continue;
+        im.__fitted = 1;
+        im.addEventListener('load', scheduleFit);
+        im.addEventListener('error', scheduleFit);
+        try {
+          if ('loading' in im) {
+            if (eagerAll) im.loading = 'eager';
+            else eagerQueue.push(im);
+          }
+        } catch (e) {}
       }
       return imgs;
+    }
+
+    /* 撑高节流：1000 张图每来一张就算一遍整页高会又卡又慢，合并成 250ms 一次 */
+    var fitPending = false;
+    function scheduleFit(){
+      if (userSetH || fitPending) return;
+      fitPending = true;
+      setTimeout(function(){ fitPending = false; autoFit(); }, 250);
     }
 
     /* iframe 刚建好时 contentDocument 是个 about:blank 空文档，别把它当成「页面已显示」 */
@@ -783,38 +847,49 @@ function addOne(inputUrl){
       return d;
     }
 
-    /* 心跳 600ms：不等 onload。同源能读到文档就报图片进度并边下边撑高；
-       跨域读不到进度，就限时把「加载中」收掉，页面自己会一点点画出来 */
+    /* 心跳 600ms：不等 onload。同源能读到文档就报进度、边下边撑高、分批放图；
+       跨域读不到进度。不管哪种情况，「加载中」那行最多只留 1.5 秒 */
     function loaderTick(){
       var sec = Math.round((Date.now() - loadStart) / 1000);
-      var d = liveDoc();
-      if (!loadingHidden) {
-        if (d && d.getElementsByTagName) {
-          frame.style.display = 'block';
-          var imgs = hookImages(d);
-          var total = imgs.length, ok = 0;
-          for (var i = 0; i < total; i++){
-            if (imgs[i].complete && imgs[i].naturalWidth > 0) ok++;
-          }
-          loading.textContent = total
-            ? '⏳ 页面已显示 · 图片到位 ' + ok + ' / ' + total + ' 张 · 已等 ' + sec + ' 秒（点这行收起提示）'
-            : '⏳ 页面已显示 · 已等 ' + sec + ' 秒（点这行收起提示）';
-          if (!userSetH) autoFit();
-          if (total === 0 || ok >= total) finishLoading();
-        } else {
-          loading.textContent = '⏳ 已等 ' + sec + ' 秒（看不到加载进度，内容会自己一点点出来；点这行先收起提示）';
-          if (frameReady || sec >= 5) finishLoading();
+
+      /* 分批把还没放行的图放出去（每批 EAGER_BATCH 张） */
+      if (eagerQueue.length){
+        var k = Math.min(EAGER_BATCH, eagerQueue.length);
+        while (k--){
+          var q = eagerQueue.shift();
+          try { q.loading = 'eager'; } catch (e) {}
         }
-      } else {
-        if (!userSetH) autoFit();
       }
-      if (sec >= 60) finishLoading();   /* 兜底：一分钟一定收掉，绝不永久卡在「加载中」 */
+
+      var d = liveDoc();
+      if (d && d.getElementsByTagName){
+        frame.style.display = 'block';
+        var imgs = hookImages(d);
+        var total = imgs.length, ok = 0;
+        for (var i = 0; i < total; i++){
+          if (imgs[i].complete && imgs[i].naturalWidth > 0) ok++;
+        }
+        imgProgress = total ? '图 ' + ok + '/' + total : '';
+        if (!loadingHidden){
+          loading.textContent = '⏳ 页面已显示' + (total ? ' · 图 ' + ok + '/' + total : '') +
+            ' · 已等 ' + sec + ' 秒（点这行收起提示）';
+        }
+        if (meas) meas.textContent = st.h + 'px' + (imgProgress ? ' · ' + imgProgress : '');
+        if (!userSetH) autoFit();
+        if (total > 0 && ok >= total) stopWatch();      /* 图全到位才算收工 */
+      } else if (!loadingHidden){
+        loading.textContent = '⏳ 已等 ' + sec + ' 秒（看不到加载进度，内容会自己一点点出来；点这行先收起提示）';
+        if (frameReady || sec >= 5) stopWatch();
+      }
+      if (sec >= 300) stopWatch();   /* 兜底：图再多，5 分钟后也不再显示「加载中」 */
     }
 
     function startLoadWatch(){
       loadStart = Date.now();
       frameReady = false;
       loadingHidden = false;
+      imgProgress = '';
+      eagerQueue = [];
       if (loading) {
         loading.style.display = '';
         loading.textContent = '⏳ 加载中…（页面已经在下，点这行可先看）';
@@ -823,6 +898,9 @@ function addOne(inputUrl){
       if (loadTimer) clearInterval(loadTimer);
       loadTimer = setInterval(loaderTick, 600);
       loaderTick();
+      /* 关键：不管这页多大，「加载中」这行最多只留 1.5 秒，绝不让人看着等 */
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(hideLoading, 1500);
     }
 
     function startWatch(){
@@ -839,8 +917,10 @@ function addOne(inputUrl){
     }
 
     function reloadPage(){
+      stopAuto();
       if (fitTimer) { clearInterval(fitTimer); fitTimer = null; }
       if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
       if (watchTimer) { clearTimeout(watchTimer); watchTimer = null; }
       tipbar.className = 'tipbar';
       tiptext.innerHTML = '';
@@ -1016,11 +1096,41 @@ function addOne(inputUrl){
     };
 
     btnPlus.onclick = function(){
+      stopAuto();
       userSetH = true;
       st.h = Math.max(200, st.h + 2000);
       repaint();
       tipbar.className = 'tipbar on';
       tiptext.innerHTML = '已加到 ' + st.h + 'px（还没保存）：这段有内容就用「上裁」定窗口再点「确认裁剪」，没内容就再点一次加高';
+    };
+
+    /* 自动加高：图很多的长页面不用一下一下点 +2000，让它自己一段段长，看到页尾就停 */
+    var autoTimer = null;
+    function stopAuto(){
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+      if (btnAuto) { btnAuto.className = 'b-auto'; btnAuto.textContent = '⏫ 自动加高'; }
+    }
+    btnAuto.onclick = function(){
+      if (autoTimer){
+        stopAuto();
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '已停止加高：当前 ' + st.h + 'px。就这样看就点「确认裁剪」定下来，还不够就再点「⏫ 自动加高」';
+        return;
+      }
+      userSetH = true;
+      btnAuto.className = 'b-auto on';
+      btnAuto.textContent = '⏹ 停止加高';
+      var steps = 0;
+      tipbar.className = 'tipbar on';
+      tiptext.innerHTML = '自动加高中：每 1.5 秒 +2000px，图会一段段接着下出来。看到页尾了就点「⏹ 停止加高」';
+      autoTimer = setInterval(function(){
+        if (!item.parentNode) { stopAuto(); return; }     /* 这一项被删了，别再空转 */
+        steps++;
+        st.h = Math.max(200, st.h + 2000);
+        repaint();
+        tiptext.innerHTML = '自动加高中：当前 ' + st.h + 'px（第 ' + steps + ' 步）。看到页尾了就点「⏹ 停止加高」';
+        if (steps >= 300) stopAuto();     /* 封顶 60 万 px，免得按忘了 */
+      }, 1500);
     };
 
     btnWarm.onclick = function(){ warmUp(); };
@@ -1081,7 +1191,7 @@ function addOne(inputUrl){
 
       var doc = sameOriginDoc(frame);
       if (doc) {
-        finishLoading();
+        hideLoading();          /* 页面已出来，先收掉那行；心跳继续报进度、分批放图 */
         st.cross = false;
         /* 同源：自动把 iframe 撑成整页高度，去掉内部滚动条，页与页之间直接接续 */
         var total = docHeight(doc);
@@ -1105,7 +1215,7 @@ function addOne(inputUrl){
           btnMgr.style.display = 'none';
         }
       } else {
-        finishLoading();
+        stopWatch();            /* 跨域读不到进度，onload 到了就收工 */
         st.cross = true;
         repaint();
         if (btnMeasure) btnMeasure.style.display = 'none';
@@ -1144,7 +1254,7 @@ function addOne(inputUrl){
     repaint();
     loading.style.cursor = 'pointer';
     loading.title = '点一下收起这行提示，直接看页面';
-    loading.onclick = function(){ finishLoading(); };
+    loading.onclick = function(){ hideLoading(); };
     startWatch();
   }
 
