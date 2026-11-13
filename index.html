@@ -117,6 +117,10 @@ body.pickh .hit{display:block}
 .cropbar .b-plus{background:#0891b2}
 .cropbar .b-auto{background:#0d9488}
 .cropbar .b-auto.on{background:#dc2626}
+.cropbar .b-float{background:#b45309}
+.cropbar .b-tm,.cropbar .b-tp,.cropbar .b-bm,.cropbar .b-bp{width:auto;margin:0 0 0 4px;padding:4px 7px;font-size:11px;border-radius:5px;
+  background:#64748b;font-weight:normal}
+.cropbar .b-tm:hover,.cropbar .b-tp:hover,.cropbar .b-bm:hover,.cropbar .b-bp:hover{background:#475569}
 .c-range{font-size:11px;color:#6b7280;flex-basis:100%}
 /* 无缝拼接：去掉条目边框、外边距、图片内边距和控制条，让多页看起来是同一页 */
 body.seamless .item{margin:0;border:0;border-radius:0}
@@ -165,7 +169,7 @@ body.panelfold .mk{display:none !important}
 
 <div id="panel">
   <div id="panelTop">
-    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v1.4</span></h3>
+    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v1.7</span></h3>
     <span id="traffic" title="统计本次打开页面实际下载的字节（本页 + 同源网页）；跨域网页浏览器不允许读，会标注未计">流量 --</span>
     <button id="btnFold" onclick="foldPanel()">收起 ✕</button>
   </div>
@@ -185,7 +189,7 @@ body.panelfold .mk{display:none !important}
   按住网页任意位置 3 秒不动（中途松手或明显拖动就取消），或者<b>双击</b>这一页，都会浮出这一页的「当前高」和「按住处」是多少 px（蓝虚线标出位置）；手机长按若被系统菜单抢走就用双击。填进「高」点「应用」，这一页就显示到那里；这个悬浮窗是绿底、固定不动的，不会自己消失，只有点「✕ 关闭」才收起；点右上「收起」后这个功能关闭<br>
   不会再卡在「加载中」：页面一边下就一边显示出来，「加载中」这行最多只留 1.5 秒就自动收起；同源页会在「实测整页高」旁边实时显示「图 x / y」，图特别多（300 张以上）时分批放行，不会把请求一次堵死，撑高也是节流合并的，1000 张图也不卡。跨域页若一直白屏，多半是网站禁止被嵌入（X-Frame-Options / CSP）：点该页黄条上的「↻ 刷新这一页」（无缝模式下标题栏是隐藏的，用这个），只重载这一页，其它页不动<br>
   标签标题会自动换成「第一页的网页名称」：同源页面直接读它的标题，跨域读不到就用域名；删掉第一页会换成新的第一页，全部清空则恢复成「网页堆叠器」<br>
-  无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效<br>
+  无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效；网页自己贴在顶部/底部的悬浮工具栏（返回、下拉、翻页那一类）会压住图，点「⬆⬇ 让开悬浮条」处理：同源页面直接隐藏它、图一张不少；跨域页面读不到人家的结构，只能上下各让 72px（高自动 +144，可见高度不变），可用「上裁 / 下裁」旁的 −10/+10 微调到刚好；设过的站会按域名记住<br>
   统一滚动条：每个网页各自实测整页高度（同源可直接读到，结果会显示在条目的「实测整页高」里并填入「高」作为默认值，你可以自己改）；跨域读不到，需自己填「高」</div>
 </div>
 
@@ -326,6 +330,31 @@ function readSavedH(host){
 function saveH(host, v){
   if (!host || !v) return;
   try { localStorage.setItem('sw_h_' + host, String(v)); } catch (e) {}
+}
+/* 按域名记住「让位」和「隐藏顶部悬浮条」，下次同一站自动套用 */
+function readSavedTop(host){
+  if (!host) return 0;
+  try { return Math.max(0, parseInt(localStorage.getItem('sw_t_' + host), 10) || 0); } catch (e) { return 0; }
+}
+function saveTop(host, v){
+  if (!host) return;
+  try { localStorage.setItem('sw_t_' + host, String(Math.max(0, v || 0))); } catch (e) {}
+}
+function readSavedBot(host){
+  if (!host) return 0;
+  try { return Math.max(0, parseInt(localStorage.getItem('sw_b_' + host), 10) || 0); } catch (e) { return 0; }
+}
+function saveBot(host, v){
+  if (!host) return;
+  try { localStorage.setItem('sw_b_' + host, String(Math.max(0, v || 0))); } catch (e) {}
+}
+function readFloatFlag(host){
+  if (!host) return false;
+  try { return localStorage.getItem('sw_f_' + host) === '1'; } catch (e) { return false; }
+}
+function saveFloatFlag(host, on){
+  if (!host) return;
+  try { localStorage.setItem('sw_f_' + host, on ? '1' : '0'); } catch (e) {}
 }
 
 /* ---------- 8 个添加位：每格一个地址，回车就添加 ---------- */
@@ -538,11 +567,14 @@ function addOne(inputUrl){
         '<div class="cropbar">' +
           '<span class="c-meas-wrap">实测整页高 <b class="c-meas">--</b></span>' +
           '<span class="cf"><i>高</i><input class="c-h" type="number" min="200" step="100" list="hpresets" placeholder="自动">px</span>' +
-          '<span class="cf"><i>上裁</i><input class="c-top" type="number" min="0" step="10" value="0">px</span>' +
-          '<span class="cf"><i>下裁</i><input class="c-bot" type="number" min="0" step="10" value="0">px</span>' +
+          '<span class="cf"><i>上裁</i><input class="c-top" type="number" min="0" step="10" value="0">px' +
+            '<button class="b-tm">−10</button><button class="b-tp">+10</button></span>' +
+          '<span class="cf"><i>下裁</i><input class="c-bot" type="number" min="0" step="10" value="0">px' +
+            '<button class="b-bm">−10</button><button class="b-bp">+10</button></span>' +
           '<button class="b-apply">确认裁剪</button>' +
           '<button class="b-plus">+2000 加高</button>' +
           '<button class="b-auto">⏫ 自动加高</button>' +
+          '<button class="b-float">⬆⬇ 让开悬浮条</button>' +
           '<button class="b-warm">全量预热（同源）</button>' +
           '<button class="b-measure">重测高度</button>' +
           '<button class="b-smart">智能裁剪（同源）</button>' +
@@ -608,6 +640,11 @@ function addOne(inputUrl){
     var btnApply = item.querySelector('.b-apply');
     var btnPlus = item.querySelector('.b-plus');
     var btnAuto = item.querySelector('.b-auto');
+    var btnFloat = item.querySelector('.b-float');
+    var btnTm = item.querySelector('.b-tm');
+    var btnTp = item.querySelector('.b-tp');
+    var btnBm = item.querySelector('.b-bm');
+    var btnBp = item.querySelector('.b-bp');
     var btnWarm = item.querySelector('.b-warm');
     var rangeEl = item.querySelector('.c-range');
     var barEl = item.querySelector('.cropbar');
@@ -918,6 +955,8 @@ function addOne(inputUrl){
 
     function reloadPage(){
       stopAuto();
+      if (item._floats) { item._floats = []; }
+      if (btnFloat) btnFloat.textContent = '⬆⬇ 让开悬浮条';
       if (fitTimer) { clearInterval(fitTimer); fitTimer = null; }
       if (loadTimer) { clearInterval(loadTimer); loadTimer = null; }
       if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
@@ -1003,7 +1042,6 @@ function addOne(inputUrl){
             clearInterval(probeTimer);
             var finalH = Math.max(200, best);
             st.h = finalH;
-            st.top = 0;
             st.bot = 0;
             repaint();
             /* 收敛校准：按最终宽度再量几遍，scrollHeight 只会往上报，不会超，最多 3 次 */
@@ -1135,6 +1173,137 @@ function addOne(inputUrl){
 
     btnWarm.onclick = function(){ warmUp(); };
 
+    /* 手机上微调「上裁」用：点一下 ±10px 立刻生效，边点边看悬浮条出没出窗口 */
+    function nudgeTop(d){
+      userSetH = true;
+      var v = Math.max(0, (st.top || 0) + d);
+      st.top = v;
+      inpTop.value = v;
+      saveTop(host, v);
+      cutTopEl.style.display = 'none';
+      cutBotEl.style.display = 'none';
+      repaint();
+      tipbar.className = 'tipbar on';
+      tiptext.innerHTML = '上裁 = ' + v + 'px（已实时生效）：顶上那条已经看不见了就点「确认裁剪」存住；还挡着就再点 +10';
+    }
+    btnTm.onclick = function(){ nudgeTop(-10); };
+    btnTp.onclick = function(){ nudgeTop(10); };
+
+    /* 底部那条同理：点一下就生效，边点边看底部那一条出没出窗口 */
+    function nudgeBot(d){
+      userSetH = true;
+      var maxBot = Math.max(0, (st.h || 0) - (st.top || 0) - 100);
+      var v = Math.min(maxBot, Math.max(0, (st.bot || 0) + d));
+      st.bot = v;
+      inpBot.value = v;
+      cutTopEl.style.display = 'none';
+      cutBotEl.style.display = 'none';
+      saveBot(host, v);
+      repaint();
+      tipbar.className = 'tipbar on';
+      tiptext.innerHTML = '下裁 = ' + v + 'px（已实时生效）：底下那条已经看不见了就点「确认裁剪」存住；还挡着就再点 +10';
+    }
+    btnBm.onclick = function(){ nudgeBot(-10); };
+    btnBp.onclick = function(){ nudgeBot(10); };
+
+    /* ---- 网页自己贴在顶部的悬浮条（工具栏 / 连载条 / 下拉条）会压住最上面那张图 ----
+       同源：把那几层直接隐藏，内容一张不少；再点一次恢复，并按域名记住这个站要隐藏。
+       跨域：读不到人家的结构，就把整页往上让开，等于把那条移出可视区（让位也按域名记住）。 */
+    function scanTopFloats(doc){
+      var vw = doc.documentElement.clientWidth || 600;
+      var ch = doc.documentElement.clientHeight || 800;
+      var found = [];
+      var els = doc.getElementsByTagName('*');
+      var cap = Math.min(els.length, 3000);
+      for (var j = 0; j < cap; j++){
+        var el = els[j];
+        if (!el || el.tagName === 'HTML' || el.tagName === 'BODY') continue;
+        var cs;
+        try { cs = doc.defaultView.getComputedStyle(el); } catch(e) { continue; }
+        if (!cs) continue;
+        if (cs.position !== 'fixed' && cs.position !== 'sticky') continue;
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        var topR = el.getBoundingClientRect();
+        if (topR.height <= 0 || topR.height > 240) continue;              /* 太高的不算工具条 */
+        if (!(topR.top <= 40 || topR.bottom >= (ch - 40))) continue;      /* 只处理贴顶或贴底的 */
+        if (topR.width < vw * 0.4) continue;                              /* 只处理横着的一条 */
+        found.push({ el: el, old: el.style.display });
+      }
+      return found;
+    }
+
+    /* 同源：隐藏顶部悬浮层，返回隐藏了几个；silent=true 时不出提示（加载完自动套用用） */
+    function hideTopFloats(silent){
+      var doc = sameOriginDoc(frame);
+      if (!doc) return 0;
+      if (item._floats && item._floats.length) return item._floats.length;
+      var found = scanTopFloats(doc);
+      if (!found.length) return 0;
+      for (var k = 0; k < found.length; k++) {
+        try { found[k].el.style.display = 'none'; } catch(e) {}
+      }
+      item._floats = found;
+      if (btnFloat) btnFloat.textContent = '↩ 恢复悬浮条';
+      if (!userSetH){
+        var t2 = docHeight(doc);
+        if (t2 > 200) st.h = t2;
+      }
+      saveFloatFlag(host, true);
+      repaint();
+      if (!silent){
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '已隐藏 ' + found.length + ' 个贴在网页顶部/底部的悬浮层，图不再被挡住。再点一次可以恢复（这个站会一直记住）';
+      }
+      return found.length;
+    }
+
+    /* 跨域页 / 找不到可隐藏层时：上下同时让开。
+       高 = 原来窗口高 + 上下让位，这样可见窗口高度不变，只是把两条挪出窗口外 */
+    function shiftBoth(n){
+      userSetH = true;
+      st.h = Math.max(200, (st.h || 0) + n * 2);
+      st.top = (st.top || 0) + n;
+      var maxBot = Math.max(0, st.h - st.top - 100);
+      st.bot = Math.min(maxBot, (st.bot || 0) + n);
+      inpH.value = st.h;
+      inpTop.value = st.top;
+      inpBot.value = st.bot;
+      saveH(host, st.h);
+      saveTop(host, st.top);
+      saveBot(host, st.bot);
+      repaint();
+      return '上裁 ' + st.top + 'px、下裁 ' + st.bot + 'px、高 ' + st.h + 'px';
+    }
+
+    btnFloat.onclick = function(){
+      var list = item._floats || [];
+      if (list.length){
+        for (var i = 0; i < list.length; i++) {
+          try { list[i].el.style.display = list[i].old; } catch(e) {}
+        }
+        item._floats = [];
+        btnFloat.textContent = '⬆⬇ 让开悬浮条';
+        saveFloatFlag(host, false);
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '已恢复网页自带的悬浮条（这个站以后不再自动隐藏）';
+        repaint();
+        return;
+      }
+      var doc = sameOriginDoc(frame);
+      if (!doc){
+        var s = shiftBoth(72);
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '跨域网页读不到人家的结构，只能让它让开：已上下各让 72px（' + s +
+          '），顶部和底部那两条都出到窗口外了。还差一点就用「上裁 / 下裁」旁边的 +10 慢慢加（别反复点这个按钮，每点一次都会往下跳过 72px）；这个设置本域名会记住';
+        return;
+      }
+      if (!hideTopFloats(false)){
+        var s2 = shiftBoth(72);
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '这一页没找到能自动隐藏的悬浮层（可能画在画布里），已上下各让开 72px（' + s2 + '）；不够就再点一次';
+      }
+    };
+
     btnMeasure.onclick = function(){
       var d = sameOriginDoc(frame);
       if (!d) return;
@@ -1142,11 +1311,10 @@ function addOne(inputUrl){
       var t = docHeight(d);
       if (t > 200) {
         st.h = t;
-        st.top = 0;
         st.bot = 0;
         repaint();
         tipbar.className = 'tipbar on';
-        tiptext.innerHTML = '重新测量：本页整页高度 ' + t + ' px（「高」里已同步，可自行改）';
+        tiptext.innerHTML = '重新测量：本页整页高度 ' + t + ' px（「高」里已同步，可自行改；上裁 ' + st.top + 'px 保留不动）';
       }
     };
 
@@ -1168,7 +1336,6 @@ function addOne(inputUrl){
       var bottom = best.getBoundingClientRect().bottom + (frame.contentWindow.scrollY || 0);
       userSetH = true;
       st.h = total;
-      st.top = 0;
       st.bot = Math.max(0, Math.ceil(total - bottom));
       repaint();
       tipbar.className = 'tipbar on';
@@ -1195,7 +1362,7 @@ function addOne(inputUrl){
         st.cross = false;
         /* 同源：自动把 iframe 撑成整页高度，去掉内部滚动条，页与页之间直接接续 */
         var total = docHeight(doc);
-        if (total > 200) { st.h = total; st.top = 0; st.bot = 0; }
+        if (total > 200) { st.h = total; st.bot = 0; }
         repaint();
         startFit();     /* 图片/异步内容稍后到位，4~5 秒内持续校准，避免只撑到屏幕高 */
         var imgs0 = hookImages(doc);
@@ -1214,9 +1381,16 @@ function addOne(inputUrl){
           tiptext.innerHTML = '同源页面：没有图片，可用「高 / 上裁 / 下裁」手动对齐';
           btnMgr.style.display = 'none';
         }
+        /* 这个站以前点过「避开悬浮条」：载入完自动再隐藏一次，不用每页手点 */
+        if (readFloatFlag(host)) hideTopFloats(true);
       } else {
         stopWatch();            /* 跨域读不到进度，onload 到了就收工 */
         st.cross = true;
+        /* 上次给这个站设过「让开悬浮条」就自动套用（上下一起） */
+        var savedTop = readSavedTop(host);
+        var savedBot = readSavedBot(host);
+        if (savedTop > 0) { st.top = savedTop; }
+        if (savedBot > 0) { st.bot = savedBot; }
         repaint();
         if (btnMeasure) btnMeasure.style.display = 'none';
         tipbar.className = 'tipbar on';
