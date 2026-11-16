@@ -55,10 +55,20 @@ button{width:100%;padding:13px;font-size:16px;border:0;border-radius:8px;color:#
 
 /* 堆叠条目 */
 .item{background:#fff;border:2px solid #2563eb;border-radius:8px;margin:10px 0;overflow:hidden}
-.bar{background:#dbeafe;padding:8px 10px;font-size:12px;display:flex;align-items:center;gap:6px}
+.bar{background:#dbeafe;padding:8px 10px;font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .bar b{color:#2563eb;flex-shrink:0}
-.bar .url{flex:1;word-break:break-all;color:#555;overflow:hidden}
+.bar .url{flex:1;word-break:break-all;color:#555;overflow:hidden;min-width:60px}
 .bar button{width:auto;padding:5px 9px;font-size:12px;margin:0;flex-shrink:0;font-weight:normal;border-radius:4px}
+/* 标题条里的「上裁 ±」和「🖥 宽屏」一组（就在刷新左边） */
+.bar .mbset{display:flex;align-items:center;gap:4px;flex-shrink:0;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:2px 5px}
+.bar .mbset i{font-style:normal;font-size:11px;color:#1e40af;flex-shrink:0}
+.bar .mbset b{font-variant-numeric:tabular-nums}
+.bar .mb-in{width:58px;height:28px;padding:1px 4px;font-size:15px;font-weight:bold;text-align:center;
+  border:1px solid #93c5fd;border-radius:5px;background:#fff;color:#1e3a8a;box-sizing:border-box;flex-shrink:0}
+.bar .mb-ok{background:#16a34a;color:#fff;font-weight:bold}
+.bar .mb-tm,.bar .mb-tp,.bar .mb-tp5{background:#2563eb;color:#fff}
+.bar .mb-wide{background:#334155;color:#fff}
+.bar .mb-wide.on{background:#0891b2}
 .b-hide{background:#6b7280}
 .b-refresh{background:#0891b2}
 .b-del{background:#dc2626}
@@ -137,7 +147,7 @@ body.showbar .bar{display:flex}
 body.showbar .cropbar{display:flex}
 body.showbar .picbar{display:flex}
 /* 面板收起时：高/上裁/下裁 等条目控制条一并隐藏；展开面板时一起回来 */
-body.panelfold .bar,body.panelfold .cropbar,body.panelfold .picbar,body.panelfold .tipbar,body.panelfold .minibar{display:none !important}
+body.panelfold .bar,body.panelfold .cropbar,body.panelfold .picbar,body.panelfold .tipbar{display:none !important}
 /* 面板收起时：单击页面取高这个功能一起关闭（捕捉层和标记线都不出现） */
 body.panelfold .hit{display:none !important}
 body.panelfold .mk{display:none !important}
@@ -166,14 +176,6 @@ body.panelfold .mk{display:none !important}
 /* 点一下展开/收起长提示（默认只占一行，免得把页面顶部挤下去、挡住你看图） */
 .tipbar.full span{white-space:normal;overflow:visible;text-overflow:clip}
 
-/* 每个页面外侧上方的一条扁工具条：上裁微调 + 宽屏开关，不用拉到这一页最下面 */
-.minibar{display:flex;align-items:center;gap:6px;padding:3px 10px;font-size:12px;color:#475569;
-  background:#eef2f7;border-top:1px solid #e3e8ef;border-bottom:1px solid #e3e8ef;line-height:1.4}
-.minibar b{color:#2563eb;font-variant-numeric:tabular-nums}
-.minibar button{width:auto;padding:5px 10px;font-size:12px;margin:0;font-weight:normal;border-radius:5px;background:#2563eb}
-.minibar .mb-wide{background:#334155;margin-left:auto}
-.minibar .mb-wide.on{background:#0891b2}
-
 /* 图片管理浮层 */
 #imgMgr{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:99998;display:none}
 #imgMgr.on{display:block}
@@ -191,7 +193,7 @@ body.panelfold .mk{display:none !important}
 
 <div id="panel">
   <div id="panelTop">
-    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v2.3</span></h3>
+    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v2.5</span></h3>
     <span id="traffic" title="统计本次打开页面实际下载的字节（本页 + 同源网页）；跨域网页浏览器不允许读，会标注未计">流量 --</span>
     <button id="btnFold" onclick="foldPanel()">收起 ✕</button>
   </div>
@@ -215,7 +217,8 @@ body.panelfold .mk{display:none !important}
   <b>顶部留白</b>（同源页专用，另一种处理那条悬浮工具栏的办法）：点「量高度留白」，工具会量出这一页自己那条贴顶工具栏有多高，然后在<b>它自己的页面里</b>上部撑出同样多的空白——那条现在就压着空白、第一张图完整；不想要这块空白，把「上裁」填成同样的数（连条带空白一起跳过，正好切到图的第一行），图还是完整的。留白按域名记住，下次打开这个站自动撑，不用每页手点；<b>跨域页</b>普通打开时读不到人家的页面、这条路走不通（只能上裁/让开），改用同目录的「启动网页堆叠器-可读模式.bat」打开本工具就可以照样留白<br>
   <b>宽屏渲染</b>（控制条里的「🖥 宽屏渲染」，每页一个开关）：把这一页按网站的桌面宽度约 760px 排版，再整体缩回手机宽度。手机版的顶栏若是死死贴着的悬浮条（还没法收起），桌面版往往就是正常页头、从上面往下排，不压图；图本来就是撑满宽度排的，缩回来视觉宽度差不多。切换后整页高会变（同源会自动重测，跨域要自己调「高」）；不压图之后，用「上裁」把那块页头切掉就行，图一点不少<br>
   统一滚动条：每个网页各自实测整页高度（同源可直接读到，结果会显示在「实测整页高」里并填入「高」作为默认值，你可以改）；跨域读不到，需自己填「高」<br>
-  <b>页面外侧上方那条扁工具条</b>（灰底一行）：<b>上裁 −10 / +10 / +50</b> 和 <b>🖥 宽屏</b>，就贴在每一页的上边缘，看到页面顶部就能直接点，不用拉到这一页最下面；黄色提示条默认只占一行（点文字可展开全文），点它左边的 ▾ 小三角就整条收起、左侧只留一个 ▸ ，再点 ▸ 展开，收起状态会一直记住；这样页面顶部不会多出东西挡你看图<br>
+  <b>上裁微调 + 宽屏开关</b>（在每一项的标题条里、就在「↻ 刷新」左边，浅蓝小框）：<b>上裁 −10 / +10 / +50</b> 和 <b>🖥 宽屏</b>，看到页面顶部就能直接点，不用拉到这一页最下面；点一下立刻生效并记进这个域名。手机屏窄时这一组会自动换到标题条第二行，不会把地址挤没<br>
+  黄色提示条默认只占一行（点文字可展开全文），点它左边的 ▾ 就整条收起、左侧只留一个 ▸，再点 ▸ 展开，收起状态会一直记住<br>
 </div>
 </div>
 
@@ -626,10 +629,23 @@ function addOne(inputUrl){
   item._url = url;        /* 标签标题要用第一页的网页名称 */
   item._isImg = isImg;
 
+  /* 上裁微调 + 宽屏开关：直接放进这一项的标题条里（就在「刷新」左边），
+     页面顶部和标题条一起，看到顶就能点，不用拉到这一页最下面 */
+  var mbsetHtml = isImg ? '' :
+    '<span class="mbset">' +
+      '<i>上裁</i><input class="mb-in" type="number" min="0" step="10" value="0" title="在这一页裁掉顶部多少 px：填好点右边 ✓ 生效（也可以直接按回车）"><i>px</i>' +
+      '<button class="mb-ok" title="按填的数字立刻生效">✓</button>' +
+      '<button class="mb-tm" title="上裁 −10px，点一下立刻生效">−10</button>' +
+      '<button class="mb-tp" title="上裁 +10px，点一下立刻生效：顶上那条看不见了就停手">+10</button>' +
+      '<button class="mb-tp5" title="上裁一次 +50px，先把跨域页那条 60 多 px 的工具栏跳过，再用 ±10 微调">+50</button>' +
+      '<button class="mb-wide" title="只改这一页：按网站桌面宽度（约 760px）排版再缩回手机宽，很多站切了以后顶栏就变成正常页头、不压图">🖥 宽屏</button>' +
+    '</span>';
+
   var barHtml =
     '<div class="bar">' +
       '<b>第' + idx + '项</b>' +
       '<span class="url">' + esc(url) + '</span>' +
+      mbsetHtml +
       '<button class="b-refresh" title="只重新加载这一页，其它页不动">↻ 刷新</button>' +
       '<button class="b-hide">隐藏</button>' +
       '<button class="b-del">删除</button>' +
@@ -650,13 +666,6 @@ function addOne(inputUrl){
       '<div class="body">' +
         '<div class="loading" title="点一下收起这行提示，直接看页面">⏳ 加载中…（页面已经在下，点这行可先看）</div>' +
         '<div class="tipbar"><button class="b-tipfold" title="收起这条提示（左侧只留一个小三角，再点展开）">▾</button><span class="tiptext"></span><button class="b-retry">↻ 刷新这一页</button><button class="b-imgmgr">图片管理</button></div>' +
-        '<div class="minibar">' +
-          '<span>上裁 <b class="mb-top">0</b> px</span>' +
-          '<button class="mb-tm" title="上裁 −10px，点一下立刻生效">−10</button>' +
-          '<button class="mb-tp" title="上裁 +10px，点一下立刻生效：顶上那条看不见了就停手">+10</button>' +
-          '<button class="mb-tp5" title="上裁一次 +50px，用来先把跨域页那条 60 多 px 的工具栏跳过，再用 ±10 微调">+50</button>' +
-          '<button class="mb-wide" title="只改这一页：按网站桌面宽度（约 760px）排版再缩回手机宽，很多站切了以后顶栏就变成正常页头、不压图">🖥 宽屏</button>' +
-        '</div>' +
         '<div class="crop">' +
           '<div class="cut top"></div>' +
           '<div class="cut bot"></div>' +
@@ -766,7 +775,8 @@ function addOne(inputUrl){
     var btnFloat = item.querySelector('.b-float');
     var btnLocal = item.querySelector('.b-local');
     var btnWide = item.querySelector('.b-wide');
-    var mbTop = item.querySelector('.mb-top');
+    var mbIn = item.querySelector('.mb-in');
+    var mbOk = item.querySelector('.mb-ok');
     var mbTm = item.querySelector('.mb-tm');
     var mbTp = item.querySelector('.mb-tp');
     var mbTp5 = item.querySelector('.mb-tp5');
@@ -800,7 +810,7 @@ function addOne(inputUrl){
       inpTop.value = st.top;
       inpBot.value = st.bot;
       if (inpPad) inpPad.value = st.pad || 0;
-      if (mbTop) mbTop.textContent = st.top || 0;
+      if (mbIn && mbIn !== document.activeElement) mbIn.value = st.top || 0;
       if (mbWide){
         mbWide.className = 'mb-wide' + (st.wide ? ' on' : '');
         mbWide.textContent = st.wide ? '🖥 退出' : '🖥 宽屏';
@@ -1332,6 +1342,7 @@ function addOne(inputUrl){
       var v = Math.max(0, (st.top || 0) + d);
       st.top = v;
       inpTop.value = v;
+      if (mbIn) mbIn.value = v;
       saveTop(host, v);
       cutTopEl.style.display = 'none';
       cutBotEl.style.display = 'none';
@@ -1651,6 +1662,30 @@ function addOne(inputUrl){
             : '已退出宽屏渲染（跨域页记得把「上裁 / 高」按老样子再调一次）';
         }
       };
+    }
+
+    /* 标题条里手填「上裁」：填数字 → 点 ✓（或按回车）立刻生效 */
+    function applyMbTop(){
+      if (!mbIn) return;
+      var v = parseInt(mbIn.value, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      var maxTop = Math.max(0, (st.h || 0) - 100);
+      if (v > maxTop) v = maxTop;
+      userSetH = true;
+      st.top = v;
+      inpTop.value = v;
+      mbIn.value = v;
+      saveTop(host, v);
+      cutTopEl.style.display = 'none';
+      cutBotEl.style.display = 'none';
+      repaint();
+      tipbar.className = 'tipbar on' + (tipbar.__folded ? ' fold' : '');
+      tiptext.innerHTML = '上裁 = ' + v + 'px（已生效）：这一页从第 ' + v + ' px 处开始显示。还挡着就再加大，不挡了就点最下面的「确认裁剪」存住';
+    }
+    if (mbOk) mbOk.onclick = applyMbTop;
+    if (mbIn){
+      mbIn.onchange = applyMbTop;
+      mbIn.onkeydown = function(e){ if (e.keyCode == 13) { e.preventDefault(); applyMbTop(); return false; } };
     }
 
     /* 页面外侧上方那条扁工具条：上裁 ±10 与宽屏开关，跟下面那组控件是同一套逻辑 */
