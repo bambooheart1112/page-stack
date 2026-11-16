@@ -75,10 +75,12 @@ iframe{width:100%;height:800px;border:0;display:block;background:#fff}
 .cut.top{top:0}
 .cut.bot{bottom:0}
 
-/* 按住这一页 3 秒（松手取消）：盖一层透明捕捉层接触摸（iframe 内部点不到），取到位置画一条蓝色虚线 */
+/* 按住这一页 2 秒（松手取消）：盖一层透明捕捉层接触摸（iframe 内部点不到），取到位置画一条蓝色虚线 */
 .hit{position:absolute;left:0;right:0;top:0;bottom:0;z-index:2;display:none;cursor:crosshair;
   touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 body.pickh .hit{display:block}
+/* 「让网页可点」期间：把这层让开，点击/滑动直接传给网页自己（用来收起它自己的工具栏） */
+.hit.off{pointer-events:none !important}
 .mk{position:absolute;left:0;right:0;height:0;border-top:2px dashed #2563eb;z-index:4;display:none;pointer-events:none}
 .mk span{position:absolute;right:10px;top:-24px;background:#2563eb;color:#fff;font-size:12px;line-height:1.6;
   padding:1px 8px;border-radius:5px;white-space:nowrap}
@@ -118,6 +120,11 @@ body.pickh .hit{display:block}
 .cropbar .b-auto{background:#0d9488}
 .cropbar .b-auto.on{background:#dc2626}
 .cropbar .b-float{background:#b45309}
+.cropbar .b-local{background:#475569}
+.cropbar .b-wide{background:#334155}
+.cropbar .b-wide.on{background:#0891b2}
+.cropbar .b-touch{background:#0369a1}
+.cropbar .b-pad{background:#0f766e}
 .cropbar .b-tm,.cropbar .b-tp,.cropbar .b-bm,.cropbar .b-bp{width:auto;margin:0 0 0 4px;padding:4px 7px;font-size:11px;border-radius:5px;
   background:#64748b;font-weight:normal}
 .cropbar .b-tm:hover,.cropbar .b-tp:hover,.cropbar .b-bm:hover,.cropbar .b-bp:hover{background:#475569}
@@ -169,7 +176,7 @@ body.panelfold .mk{display:none !important}
 
 <div id="panel">
   <div id="panelTop">
-    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v1.7</span></h3>
+    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v2.1</span></h3>
     <span id="traffic" title="统计本次打开页面实际下载的字节（本页 + 同源网页）；跨域网页浏览器不允许读，会标注未计">流量 --</span>
     <button id="btnFold" onclick="foldPanel()">收起 ✕</button>
   </div>
@@ -183,13 +190,15 @@ body.panelfold .mk{display:none !important}
     <label><input type="checkbox" id="chkSeam" checked onchange="setSeam(this.checked)"> 无缝拼接（去边框/间距/控制条）</label>
     <label><input type="checkbox" id="chkUni" checked onchange="applyUni()"> 统一滚动条（网页内部不滚动）</label>
     <label><input type="checkbox" id="chkBar" checked onchange="setBar(this.checked)"> 显示条目控制条</label>
-    <label><input type="checkbox" id="chkClickH" checked onchange="setClickH(this.checked)"> 按住页面 3 秒看高度、直接设「高」</label>
+    <label><input type="checkbox" id="chkClickH" checked onchange="setClickH(this.checked)"> 按住页面 2 秒看高度、直接设「高」</label>
   </div>
   <div class="hint">图片地址（.jpg/.png/.gif/.webp 结尾）自动按图片显示，每张单独删除/隐藏；网页若与工具同源，可用「图片管理」逐张删除<br>
-  按住网页任意位置 3 秒不动（中途松手或明显拖动就取消），或者<b>双击</b>这一页，都会浮出这一页的「当前高」和「按住处」是多少 px（蓝虚线标出位置）；手机长按若被系统菜单抢走就用双击。填进「高」点「应用」，这一页就显示到那里；这个悬浮窗是绿底、固定不动的，不会自己消失，只有点「✕ 关闭」才收起；点右上「收起」后这个功能关闭<br>
+  按住网页任意位置 2 秒不动（中途松手或明显拖动就取消）才会浮出这一页的「当前高」和「按住处」是多少 px（蓝虚线标出位置）；<b>单击、双击都不再弹窗</b>，只有按满 2 秒才出，按住时屏幕上会有一条倒计时提示。填进「高」点「应用」，这一页就显示到那里；这个悬浮窗是绿底、固定不动的，不会自己消失，只有点「✕ 关闭」才收起；点右上「收起」后这个功能关闭<br>
   不会再卡在「加载中」：页面一边下就一边显示出来，「加载中」这行最多只留 1.5 秒就自动收起；同源页会在「实测整页高」旁边实时显示「图 x / y」，图特别多（300 张以上）时分批放行，不会把请求一次堵死，撑高也是节流合并的，1000 张图也不卡。跨域页若一直白屏，多半是网站禁止被嵌入（X-Frame-Options / CSP）：点该页黄条上的「↻ 刷新这一页」（无缝模式下标题栏是隐藏的，用这个），只重载这一页，其它页不动<br>
   标签标题会自动换成「第一页的网页名称」：同源页面直接读它的标题，跨域读不到就用域名；删掉第一页会换成新的第一页，全部清空则恢复成「网页堆叠器」<br>
-  无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效；网页自己贴在顶部/底部的悬浮工具栏（返回、下拉、翻页那一类）会压住图，点「⬆⬇ 让开悬浮条」处理：同源页面直接隐藏它、图一张不少；跨域页面读不到人家的结构，只能上下各让 72px（高自动 +144，可见高度不变），可用「上裁 / 下裁」旁的 −10/+10 微调到刚好；设过的站会按域名记住<br>
+  无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效；网页自己贴在顶部/底部的悬浮工具栏（返回、下拉、翻页那一类）会压住图，点「⬆⬇ 让开悬浮条」处理：同源页面直接隐藏它、图一张不少；跨域页面读不到人家的结构，只能上下各让 64px（高自动 +128，可见高度不变），可用「上裁 / 下裁」旁的 −10/+10 微调到刚好；一条都不想把图切掉的话，先点「🎛 让网页可点 6 秒」把网页自己的工具栏收起来，再把上裁/下裁清成 0；设过的站会按域名记住<br>
+  <b>顶部留白</b>（同源页专用，另一种处理那条悬浮工具栏的办法）：点「量高度留白」，工具会量出这一页自己那条贴顶工具栏有多高，然后在<b>它自己的页面里</b>上部撑出同样多的空白——那条现在就压着空白、第一张图完整；不想要这块空白，把「上裁」填成同样的数（连条带空白一起跳过，正好切到图的第一行），图还是完整的。留白按域名记住，下次打开这个站自动撑，不用每页手点；<b>跨域页</b>普通打开时读不到人家的页面、这条路走不通（只能上裁/让开），改用同目录的「启动网页堆叠器-可读模式.bat」打开本工具就可以照样留白<br>
+  <b>宽屏渲染</b>（控制条里的「🖥 宽屏渲染」，每页一个开关）：把这一页按网站的桌面宽度约 760px 排版，再整体缩回手机宽度。手机版的顶栏若是死死贴着的悬浮条（还没法收起），桌面版往往就是正常页头、从上面往下排，不压图；图本来就是撑满宽度排的，缩回来视觉宽度差不多。切换后整页高会变（同源会自动重测，跨域要自己调「高」）；不压图之后，用「上裁」把那块页头切掉就行，图一点不少<br>
   统一滚动条：每个网页各自实测整页高度（同源可直接读到，结果会显示在条目的「实测整页高」里并填入「高」作为默认值，你可以自己改）；跨域读不到，需自己填「高」</div>
 </div>
 
@@ -217,7 +226,7 @@ body.panelfold .mk{display:none !important}
   <div class="he-tip">点「应用」后，这一页就显示到这条虚线为止；这个窗口固定悬浮，只有点「✕ 关闭」才收起</div>
 </div>
 
-<div id="holdTip">按住不动 <b>3</b> 秒取高 · 松手取消</div>
+<div id="holdTip">按住不动 <b>2</b> 秒取高 · 松手取消</div>
 
 <script>
 var box = document.getElementById('box');
@@ -281,9 +290,28 @@ function isImageUrl(url){
 /* ---------- 裁剪相关的小工具（只改尺寸/偏移，不读页面内容，所以跨域也能裁） ---------- */
 function applyCrop(frame, cropEl, st){
   var h = st.h > 0 ? st.h : 800;
+  /* 宽屏渲染：把这一页的布局宽度放大（约 760px，等于网站的桌面宽度），再整体缩回手机宽度。
+     桌面布局的顶栏大多是「站内的正常头部」而不是死死贴着的悬浮条，缩回来以后就不压图了。
+     st.z 是所有坐标换算要用的比例（手机点一下 = 页面里 1/z px）。 */
+  var z = 1;
+  if (st.wide){
+    var w = (cropEl && cropEl.clientWidth) || 400;
+    z = Math.min(1, w / 760);            /* 屏幕宽 / 760 = 要缩回多少；屏幕本来就比 760 宽就不缩 */
+    z = Math.max(0.3, Math.round(z * 100) / 100);
+  }
+  st.z = z;
+  if (z < 1){
+    frame.style.width = (100 / z) + '%';
+    frame.style.transformOrigin = '0 0';
+    frame.style.transform = 'scale(' + z + ')';
+  } else {
+    frame.style.width = '';
+    frame.style.transform = '';
+    frame.style.transformOrigin = '';
+  }
   frame.style.height = h + 'px';
-  frame.style.top = (-(st.top || 0)) + 'px';
-  cropEl.style.height = Math.max(40, h - (st.top || 0) - (st.bot || 0)) + 'px';
+  frame.style.top = (-(st.top || 0) * z) + 'px';
+  cropEl.style.height = Math.max(40, (h - (st.top || 0) - (st.bot || 0)) * z) + 'px';
 }
 
 /* 同源才拿得到 document，跨域会抛异常或返回 null */
@@ -298,6 +326,45 @@ function docHeight(doc){
   var a = doc.documentElement ? doc.documentElement.scrollHeight : 0;
   var b = doc.body ? doc.body.scrollHeight : 0;
   return Math.max(a, b, 0);
+}
+
+/* 在网页自己的文档里，上部额外多留出一份空白（只改 body 的 padding-top，随时能还原成原样）。
+   网页自己那条「贴在顶部」的悬浮工具栏是相对 iframe 视口定位的，所以留白之后它就正好踩在这条
+   空白上，而不是压在第一张图上；不想要这块空白，把「上裁」加到同样的数就能连条带空白一起切掉。
+   跨域文档拿不到，返回 false。 */
+function padDoc(doc, pad){
+  if (!doc || !doc.body) return false;
+  var b = doc.body;
+  if (b.__padBase === undefined){
+    var cur = 0;
+    try { cur = parseFloat(doc.defaultView.getComputedStyle(b).paddingTop) || 0; }
+    catch (e) { cur = parseFloat(b.style.paddingTop) || 0; }
+    b.__padBase = cur;
+  }
+  b.style.paddingTop = (b.__padBase + Math.max(0, pad || 0)) + 'px';
+  return true;
+}
+
+/* 量一下这一页自己那条贴顶工具条有多高（同源才量得到），量不到返回 0 */
+function topBarHeight(doc){
+  var vw = doc.documentElement.clientWidth || 600;
+  var els = doc.getElementsByTagName('*');
+  var cap = Math.min(els.length, 3000);
+  var best = 0;
+  for (var j = 0; j < cap; j++){
+    var el = els[j];
+    if (!el || el.tagName === 'HTML' || el.tagName === 'BODY') continue;
+    var cs;
+    try { cs = doc.defaultView.getComputedStyle(el); } catch (e) { continue; }
+    if (!cs || (cs.position !== 'fixed' && cs.position !== 'sticky')) continue;
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    var r = el.getBoundingClientRect();
+    if (r.height <= 0 || r.height > 240) continue;
+    if (r.top > 40) continue;                       /* 只算贴顶的那一条 */
+    if (r.width < vw * 0.4) continue;               /* 横着的一条才算 */
+    if (r.height > best) best = r.height;
+  }
+  return Math.round(best);
 }
 
 /* 找出页面里面积最大的一张图（跳过图标、装饰小图） */
@@ -355,6 +422,15 @@ function readFloatFlag(host){
 function saveFloatFlag(host, on){
   if (!host) return;
   try { localStorage.setItem('sw_f_' + host, on ? '1' : '0'); } catch (e) {}
+}
+/* 按域名记住「顶部留白」：在这一页自己的页面里，上部额外多留出多少 px 空白 */
+function readSavedPad(host){
+  if (!host) return 0;
+  try { return Math.max(0, parseInt(localStorage.getItem('sw_p_' + host), 10) || 0); } catch (e) { return 0; }
+}
+function savePad(host, v){
+  if (!host) return;
+  try { localStorage.setItem('sw_p_' + host, String(Math.max(0, v || 0))); } catch (e) {}
 }
 
 /* ---------- 8 个添加位：每格一个地址，回车就添加 ---------- */
@@ -571,10 +647,15 @@ function addOne(inputUrl){
             '<button class="b-tm">−10</button><button class="b-tp">+10</button></span>' +
           '<span class="cf"><i>下裁</i><input class="c-bot" type="number" min="0" step="10" value="0">px' +
             '<button class="b-bm">−10</button><button class="b-bp">+10</button></span>' +
+          '<span class="cf"><i>顶部留白</i><input class="c-pad" type="number" min="0" step="10" value="0" title="在这一页自己的页面里，上部多留出这么多空白">px' +
+            '<button class="b-pad" title="量出网页自己那条贴顶工具条的高度，并在它自己的页面里上部留出这么多空白，那条就踩在空白上、不压图">量高度留白</button></span>' +
           '<button class="b-apply">确认裁剪</button>' +
           '<button class="b-plus">+2000 加高</button>' +
           '<button class="b-auto">⏫ 自动加高</button>' +
           '<button class="b-float">⬆⬇ 让开悬浮条</button>' +
+          '<button class="b-local" title="跨域页专用：走公共代理把这一页的源码取回来，在本工具里本地重绘 → 之后就能量高度、顶部留白、隐藏悬浮条、智能裁剪（手机浏览器也能用）">⤵ 本地重绘</button>' +
+          '<button class="b-wide" title="把这一页按网站的桌面宽度（约 760px）排版，再整体缩回手机宽：很多站的桌面版顶栏是正常页头、不压图；图是撑满宽度排的，缩回来还是手机宽。开关只对这一页有效">🖥 宽屏渲染</button>' +
+          '<button class="b-touch">🎛 让网页可点 6 秒</button>' +
           '<button class="b-warm">全量预热（同源）</button>' +
           '<button class="b-measure">重测高度</button>' +
           '<button class="b-smart">智能裁剪（同源）</button>' +
@@ -634,6 +715,8 @@ function addOne(inputUrl){
     var inpH = item.querySelector('.c-h');
     var inpTop = item.querySelector('.c-top');
     var inpBot = item.querySelector('.c-bot');
+    var inpPad = item.querySelector('.c-pad');
+    var btnPad = item.querySelector('.b-pad');
     var btnSmart = item.querySelector('.b-smart');
     var meas = item.querySelector('.c-meas');
     var btnMeasure = item.querySelector('.b-measure');
@@ -641,6 +724,10 @@ function addOne(inputUrl){
     var btnPlus = item.querySelector('.b-plus');
     var btnAuto = item.querySelector('.b-auto');
     var btnFloat = item.querySelector('.b-float');
+    var btnLocal = item.querySelector('.b-local');
+    var btnWide = item.querySelector('.b-wide');
+    var btnTouch = item.querySelector('.b-touch');
+    var hitLayer = item.querySelector('.hit');
     var btnTm = item.querySelector('.b-tm');
     var btnTp = item.querySelector('.b-tp');
     var btnBm = item.querySelector('.b-bm');
@@ -660,13 +747,14 @@ function addOne(inputUrl){
     var host = '';
     try { host = (new URL(url)).hostname; } catch (e) { host = ''; }
     var savedH = readSavedH(host);
-    var st = item._crop = { h: savedH || defaultCrossH(), top: 0, bot: 0 };
+    var st = item._crop = { h: savedH || defaultCrossH(), top: 0, bot: 0, pad: 0, wide: false, z: 1 };
 
     function repaint(){
       applyCrop(frame, cropEl, st);
       inpH.value = st.h;
       inpTop.value = st.top;
       inpBot.value = st.bot;
+      if (inpPad) inpPad.value = st.pad || 0;
       if (meas) meas.textContent = st.h + 'px' + (st.cross ? '（估算）' : '') + (imgProgress ? ' · ' + imgProgress : '');
       if (cutTopEl) cutTopEl.style.display = 'none';
       if (cutBotEl) cutBotEl.style.display = 'none';
@@ -678,10 +766,23 @@ function addOne(inputUrl){
     }
 
     item._repaint = repaint;
+    /* 手机横竖屏切换：宽屏渲染的缩放比例要跟着屏幕宽度重算（只挂一次） */
+    if (!window.__wideResize){
+      window.__wideResize = true;
+      window.addEventListener('resize', function(){
+        var bx = document.getElementById('box');
+        if (!bx) return;
+        var its = bx.children;
+        for (var i = 0; i < its.length; i++){
+          var rp = its[i]._repaint, cp = its[i]._crop;
+          if (rp && cp && cp.wide) { try { rp(); } catch (e) {} }
+        }
+      });
+    }
 
-    /* 按住这一页 3 秒（手指/鼠标按住不动，中途松手或挪动就取消）：算出按住处离这一页顶端多少 px，
+    /* 按住这一页 2 秒（手指/鼠标按住不动，中途松手或挪动就取消）：算出按住处离这一页顶端多少 px，
        浮出小面板；面板里填「高」点「应用」，这一页就截到那条蓝虚线为止。
-       手机轻点不再误触发，也不会出现「刚弹出来就没了」；面板固定悬浮，只有点「✕ 关闭」才收起。
+       单击、双击都不弹窗，只有按满 2 秒才出；面板固定悬浮，只有点「✕ 关闭」才收起。
        面板收起（body.panelfold）或关掉开关（body 上没有 pickh）时，捕捉层不接触摸 */
     function placeFloat(el, x, y, dx, dy){
       var vw = window.innerWidth || 360, vh = window.innerHeight || 640;
@@ -699,7 +800,8 @@ function addOne(inputUrl){
     function openAtPoint(cx, cy){
       var vr = cropEl.getBoundingClientRect();
       var y = Math.max(0, Math.round(cy - vr.top));
-      var point = Math.round((st.top || 0) + y);
+      var zz = st.z || 1;
+      var point = Math.round((st.top || 0) + y / zz);
       if (mkEl) {
         mkEl.style.top = y + 'px';
         mkEl.style.display = 'block';
@@ -722,10 +824,9 @@ function addOne(inputUrl){
       }, cx, cy, holdTouch);
     }
 
-    var HOLD_MS = 3000;     /* 按住多久取高 */
+    var HOLD_MS = 2000;     /* 按住多久取高（2 秒） */
     var HOLD_MOVE = 40;     /* 安卓手指会抖，移动超过 40px 才算滑动取消 */
     var holdTimer = null, holdTick = null, holdX = 0, holdY = 0, holdTouch = false, holdCtxMenu = false;
-    var lastTapAt = 0, lastTapX = 0, lastTapY = 0;
 
     function holdCancel(){
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
@@ -740,7 +841,7 @@ function addOne(inputUrl){
       holdX = cx; holdY = cy; holdTouch = !!touch; holdCtxMenu = false;
       var tip = document.getElementById('holdTip');
       if (tip) {
-        tip.innerHTML = '按住不动 <b>3</b> 秒取高 · 松手取消';
+        tip.innerHTML = '按住不动 <b>2</b> 秒取高 · 松手取消';
         tip.style.display = 'block';
         placeFloat(tip, holdX, holdY, 10, 20);
       }
@@ -762,16 +863,7 @@ function addOne(inputUrl){
       if (__folded || !__clickH) return;
       if (ev.touches.length !== 1) { holdCancel(); return; }
       var t = ev.touches[0];
-      var now = Date.now();
-      /* 双指以外：双击也能取高，万一路由被系统长按菜单抢走，这是后备路径 */
-      if (now - lastTapAt < 320 &&
-          Math.abs(t.clientX - lastTapX) < 40 && Math.abs(t.clientY - lastTapY) < 40) {
-        lastTapAt = 0;
-        holdCancel();
-        openAtPoint(t.clientX, t.clientY);
-        return;
-      }
-      lastTapAt = now; lastTapX = t.clientX; lastTapY = t.clientY;
+      /* 只有按住 2 秒才取高：轻点、连点两下都不弹窗 */
       holdStart(t.clientX, t.clientY, true);
     }, { passive: true });
 
@@ -783,10 +875,10 @@ function addOne(inputUrl){
     }, { passive: true });
 
     hitEl.addEventListener('touchend', function(){
-      if (holdTimer) holdCancel();        /* 不到 3 秒松手：取消，不弹窗 */
+      if (holdTimer) holdCancel();        /* 不到 2 秒松手：取消，不弹窗 */
     });
 
-    /* 安卓把长按交给系统时会发 touchcancel/pointercancel：这里一律不清计时，继续等满 3 秒 */
+    /* 安卓把长按交给系统时会发 touchcancel/pointercancel：这里一律不清计时，继续等满 2 秒 */
     hitEl.addEventListener('touchcancel', function(){ /* 故意什么都不做 */ });
     hitEl.addEventListener('pointercancel', function(){ /* 故意什么都不做 */ });
 
@@ -970,7 +1062,13 @@ function addOne(inputUrl){
       reloading = true;
       frame.setAttribute('src', 'about:blank');       /* 先清空，免得浏览器拿上一次的旧内容 */
       setTimeout(function(){
-        frame.setAttribute('src', url);
+        if (item._localHtml){
+          /* 这一页是「本地重绘」过的：还用取回来的源码重绘，别退回跨域 */
+          frame.removeAttribute('src');
+          frame.srcdoc = item._localHtml;
+        } else {
+          frame.setAttribute('src', url);
+        }
         reloading = false;
         frame.style.display = 'block';
         startWatch();
@@ -1064,18 +1162,19 @@ function addOne(inputUrl){
     /* 上裁/下裁：输入时只显示半透明覆盖层预览，点「确认裁剪」才真的生效 */
     function previewCut(){
       var visible = Math.max(40, (st.h > 0 ? st.h : 800) - st.top - st.bot);
+      var zz = st.z || 1;
       var pt = Math.max(0, parseInt(inpTop.value, 10) || 0);
       var pb = Math.max(0, parseInt(inpBot.value, 10) || 0);
       if (pt > 0) {
         cutTopEl.style.display = 'block';
-        cutTopEl.style.height = Math.min(pt, visible) + 'px';
+        cutTopEl.style.height = Math.min(pt, visible) * zz + 'px';
         cutTopEl.textContent = '将裁掉顶部 ' + pt + 'px';
       } else {
         cutTopEl.style.display = 'none';
       }
       if (pb > 0) {
         cutBotEl.style.display = 'block';
-        cutBotEl.style.height = Math.min(pb, visible) + 'px';
+        cutBotEl.style.height = Math.min(pb, visible) * zz + 'px';
         cutBotEl.textContent = '将裁掉底部 ' + pb + 'px';
       } else {
         cutBotEl.style.display = 'none';
@@ -1097,7 +1196,7 @@ function addOne(inputUrl){
         var cut = visible - v;
         if (cut > 0) {
           cutBotEl.style.display = 'block';
-          cutBotEl.style.height = Math.min(cut, visible) + 'px';
+          cutBotEl.style.height = Math.min(cut, visible) * (st.z || 1) + 'px';
           cutBotEl.textContent = '将减少 ' + cut + 'px（点确认裁剪生效）';
         }
         return;
@@ -1206,6 +1305,40 @@ function addOne(inputUrl){
     btnBm.onclick = function(){ nudgeBot(-10); };
     btnBp.onclick = function(){ nudgeBot(10); };
 
+    /* ---- 「让网页可点」：把捕捉层让开几秒，让你能点网页自己的按钮 ----
+       很多阅读器那排工具栏是它自己的 UI，点一下图片或点它自己的「下拉」就会收起；
+       收起来以后「上裁 / 下裁」留 0，第一张图就一点不会被切掉。 */
+    var passTimer = null;
+    function endPass(){
+      if (passTimer) { clearInterval(passTimer); passTimer = null; }
+      if (hitLayer) hitLayer.className = 'hit';
+      if (btnTouch) btnTouch.textContent = '🎛 让网页可点 6 秒';
+    }
+    btnTouch.onclick = function(){
+      if (passTimer){
+        endPass();
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '已恢复：重新由工具接管点击（按住 2 秒取高，单击、双击都不弹窗）';
+        return;
+      }
+      holdCancel();
+      if (hitLayer) hitLayer.className = 'hit off';
+      var left = 6;
+      if (btnTouch) btnTouch.textContent = '🎛 可点 ' + left + ' 秒';
+      tipbar.className = 'tipbar on';
+      tiptext.innerHTML = '接下来 ' + left + ' 秒里，你的点击和滑动会直接传给网页：点一下图片中间，或者点它自己那排「下拉」，这类阅读器一般会把工具栏收起来。收起后再点一次这个按钮结束，然后把「上裁 / 下裁」清成 0，第一张图就完整了';
+      passTimer = setInterval(function(){
+        left--;
+        if (left <= 0){
+          endPass();
+          tipbar.className = 'tipbar on';
+          tiptext.innerHTML = '已恢复成工具接管：如果那排按钮已经收起来了，「上裁 / 下裁」清成 0 就一点不缺；没收起就还是用「⬆⬇ 让开悬浮条」';
+          return;
+        }
+        if (btnTouch) btnTouch.textContent = '🎛 可点 ' + left + ' 秒';
+      }, 1000);
+    };
+
     /* ---- 网页自己贴在顶部的悬浮条（工具栏 / 连载条 / 下拉条）会压住最上面那张图 ----
        同源：把那几层直接隐藏，内容一张不少；再点一次恢复，并按域名记住这个站要隐藏。
        跨域：读不到人家的结构，就把整页往上让开，等于把那条移出可视区（让位也按域名记住）。 */
@@ -1244,6 +1377,13 @@ function addOne(inputUrl){
       }
       item._floats = found;
       if (btnFloat) btnFloat.textContent = '↩ 恢复悬浮条';
+      /* 已经把它隐藏了，那块「顶部留白」就没用了：顺手清回 0，省得多一块空白 */
+      if (st.pad) {
+        try { padDoc(doc, 0); } catch(e) {}
+        st.pad = 0;
+        savePad(host, 0);
+        if (inpPad) inpPad.value = 0;
+      }
       if (!userSetH){
         var t2 = docHeight(doc);
         if (t2 > 200) st.h = t2;
@@ -1291,18 +1431,173 @@ function addOne(inputUrl){
       }
       var doc = sameOriginDoc(frame);
       if (!doc){
-        var s = shiftBoth(72);
+        var s = shiftBoth(64);
         tipbar.className = 'tipbar on';
-        tiptext.innerHTML = '跨域网页读不到人家的结构，只能让它让开：已上下各让 72px（' + s +
-          '），顶部和底部那两条都出到窗口外了。还差一点就用「上裁 / 下裁」旁边的 +10 慢慢加（别反复点这个按钮，每点一次都会往下跳过 72px）；这个设置本域名会记住';
+        tiptext.innerHTML = '跨域网页读不到人家的结构，只能让它让开：已上下各让 64px（' + s +
+          '），顶部和底部那两条都出到窗口外了。还差一点就用「上裁 / 下裁」旁边的 +10 慢慢加（别反复点这个按钮，每点一次都会再往下跳过 64px）；这个设置本域名会记住。想让一张图都不缺，就用「🎛 让网页可点 6 秒」先把网页自己的工具栏收起来';
         return;
       }
       if (!hideTopFloats(false)){
-        var s2 = shiftBoth(72);
+        var s2 = shiftBoth(64);
         tipbar.className = 'tipbar on';
-        tiptext.innerHTML = '这一页没找到能自动隐藏的悬浮层（可能画在画布里），已上下各让开 72px（' + s2 + '）；不够就再点一次';
+        tiptext.innerHTML = '这一页没找到能自动隐藏的悬浮层（可能画在画布里），已上下各让开 64px（' + s2 + '）；不够就再点一次';
       }
     };
+
+    /* ---- 顶部留白：在这一页自己的页面里，上部额外多留出一份空白 ----
+       贴顶的那条固定工具栏是相对 iframe 视口定位的，留白之后它踩在空白上、第一张图不被压；
+       不想要这块空白，把「上裁」加到同样的数，连条带空白一起切掉，图一张不少。 */
+    function applyPad(pad, silent){
+      pad = Math.max(0, Math.min(600, parseInt(pad, 10) || 0));
+      var doc = sameOriginDoc(frame);
+      if (!doc){
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '跨域网页不能在它自己的页面里插空白。想要一样的效果，用同目录的「启动网页堆叠器-可读模式.bat」打开本工具，跨域页就也能读、能留白；普通打开时只能把「上裁」加到那条的高度（会切掉顶部同样高度），或点「⬆⬇ 让开悬浮条」';
+        return;
+      }
+      var oldPad = st.pad || 0;
+      padDoc(doc, pad);
+      st.pad = pad;
+      inpPad.value = pad;
+      savePad(host, pad);
+      /* 留白会让这一页的文档变高：高跟着这份差值一起变（没手动改过高就直接按实测重算）；
+         上裁不动，所以这块空白正好露在窗口最上面 */
+      var t = docHeight(doc);
+      if (userSetH && st.h) st.h = Math.max(200, st.h + (pad - oldPad));
+      else if (t > 200) st.h = t;
+      repaint();
+      if (meas) meas.textContent = t;
+      if (!silent){
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = pad > 0
+          ? '已在这一页自己的页面里上部留出 ' + pad + 'px 空白：那条贴顶工具栏现在压在空白上，图是完整的。想把它彻底切掉，把「上裁」填到 ' + pad + '（连条带空白一起跳过，正好切到图的第一行）；这个站以后自动照这个数留白'
+          : '已把这一页的顶部留白清成 0，网页恢复原样（这块空白原来是自己页面内部撑出来的，所以改完高度会跟着变）';
+      }
+    }
+
+    if (inpPad){
+      inpPad.onchange = function(){ applyPad(inpPad.value); };
+      inpPad.onkeydown = function(e){ if (e.keyCode == 13) { e.preventDefault(); applyPad(inpPad.value); return false; } };
+    }
+    if (btnPad){
+      btnPad.onclick = function(){
+        var doc = sameOriginDoc(frame);
+        if (!doc){
+          tipbar.className = 'tipbar on';
+          tiptext.innerHTML = '跨域页读不到它自己的结构，量不出那条工具栏多高、也插不了空白。想要一样的效果：用同目录的「启动网页堆叠器-可读模式.bat」打开本工具，再点一次这个按钮；普通打开时只能用「上裁」跳过（会切掉顶部同样高度）或「⬆⬇ 让开悬浮条」';
+          return;
+        }
+        if (item._floats && item._floats.length){
+          tipbar.className = 'tipbar on';
+          tiptext.innerHTML = '这条你们已经把它隐藏了（再点「↩ 恢复悬浮条」就回来）；隐藏着的状态下留白只会多出一块空白，不用留';
+          return;
+        }
+        var bar = topBarHeight(doc);
+        var p = bar > 0 ? (bar + 6) : 64;
+        applyPad(p);
+        if (bar > 0){
+          tiptext.innerHTML = '量到这一页贴顶的工具栏高 ' + bar + 'px，已在自己页面里上部留出 ' + p + 'px 空白（多给 6px 余量），它现在压着空白、不压图；要切掉就把「上裁」填 ' + p;
+        }
+      };
+    }
+
+    /* ---- 跨域页的跨平台办法（手机浏览器也能用）：走公共代理把这一页的源码取回来，
+       用 srcdoc 在本工具里「本地重绘」→ 这一页就变成同源，量高度 / 顶部留白 / 隐藏悬浮条 /
+       智能裁剪 / 图片管理 全都可用。取不回来（挡代理、防盗链、要登录）就退回让开 / 上裁。 ---- */
+    var PROXIES = [
+      'https://api.allorigins.win/raw?url=',
+      'https://api.codetabs.com/v1/proxy/?quest=',
+      'https://corsproxy.io/?url='
+    ];
+
+    function makeSrdoc(html, base){
+      var head = '<base href="' + esc(base) + '"><meta name="referrer" content="no-referrer">';
+      html = html.replace(/<meta[^>]+http-equiv=["']?content-security-policy["']?[^>]*>/gi, '');
+      if (/<head[^>]*>/i.test(html)) {
+        return html.replace(/<head[^>]*>/i, function(m){ return m + head; });
+      }
+      if (/<html[^>]*>/i.test(html)) {
+        return html.replace(/<html[^>]*>/i, function(m){ return m + '<head>' + head + '</head>'; });
+      }
+      return '<head>' + head + '</head>' + html;
+    }
+
+    function viaProxy(u, cb){
+      var i = 0;
+      function step(){
+        if (i >= PROXIES.length) { cb(null); return; }
+        var full = PROXIES[i++] + encodeURIComponent(u);
+        var done = false;
+        var guard = setTimeout(function(){ if (!done) { done = true; step(); } }, 13000);
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', full, true);
+          xhr.onreadystatechange = function(){
+            if (xhr.readyState !== 4 || done) return;
+            done = true; clearTimeout(guard);
+            var t = '';
+            try { t = xhr.responseText || ''; } catch (e) { t = ''; }
+            if (t.length > 300 && /<\s*(html|body|div|img|head)/i.test(t)) cb(makeSrdoc(t, u));
+            else step();
+          };
+          xhr.send(null);
+        } catch (e) { done = true; clearTimeout(guard); step(); }
+      }
+      step();
+    }
+
+    function useLocal(html, silent){
+      item._localHtml = html;
+      item._floats = [];
+      frame.style.display = 'block';
+      frame.removeAttribute('src');
+      frame.srcdoc = html;
+      if (!silent){
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '已取回源码，正在本地重绘…出来以后「量高度留白 / 让开悬浮条 / 智能裁剪 / 图片管理」都能用了';
+      }
+    }
+
+    if (btnLocal){
+      btnLocal.onclick = function(){
+        if (item._localHtml){ useLocal(item._localHtml, false); return; }
+        tipbar.className = 'tipbar on';
+        tiptext.innerHTML = '正在走代理取这一页的源码（十几秒，慢的站会更久）…';
+        viaProxy(url, function(html){
+          if (!html){
+            tipbar.className = 'tipbar on';
+            tiptext.innerHTML = '没取回来：这个站挡公共代理，或者要登录 / 防盗链。这页还能用「⬆⬇ 让开悬浮条」和「上裁」；桌面端也可以用同目录的「启动网页堆叠器-可读模式.bat」打开本工具';
+            return;
+          }
+          useLocal(html, false);
+        });
+      };
+    }
+
+    /* ---- 宽屏渲染：按网站桌面宽度（约 760px）排版，再整体缩回手机宽 ----
+       很多站的手机版顶栏是死死贴着的悬浮条（还没法收起），桌面版却是正常页头，
+       一切都从上面往下排、不压图；图是撑满宽度排的，缩回来视觉宽度差不多。 ---- */
+    if (btnWide){
+      btnWide.onclick = function(){
+        st.wide = !st.wide;
+        btnWide.className = 'b-wide' + (st.wide ? ' on' : '');
+        btnWide.textContent = st.wide ? '🖥 退出宽屏' : '🖥 宽屏渲染';
+        repaint();
+        var d = sameOriginDoc(frame);
+        if (d){
+          startFit();               /* 布局宽度变了，整页高要重测 */
+          tipbar.className = 'tipbar on';
+          tiptext.innerHTML = st.wide
+            ? '宽屏渲染已开：按约 760px 桌面宽度排版再缩回手机宽，正在重测整页高。桌面版顶栏若成了正常页头，它就不压图了，用「上裁」把那块页头切掉即可（图一点不少）'
+            : '已退出宽屏渲染，回到手机版排版；正在重测整页高';
+        } else {
+          tipbar.className = 'tipbar on';
+          tiptext.innerHTML = st.wide
+            ? '宽屏渲染已开：跨域页读不到整页高，这个数要自己调。先看上面那条顶栏还压不压图——不压了，就按住它的下沿 2 秒，把「按住处」那个数填进「上裁」；高不够就点「+2000 加高」'
+            : '已退出宽屏渲染（跨域页记得把「上裁 / 高」按老样子再调一次）';
+        }
+      };
+    }
 
     btnMeasure.onclick = function(){
       var d = sameOriginDoc(frame);
@@ -1360,7 +1655,15 @@ function addOne(inputUrl){
       if (doc) {
         hideLoading();          /* 页面已出来，先收掉那行；心跳继续报进度、分批放图 */
         st.cross = false;
+        if (btnLocal) btnLocal.style.display = 'none';   /* 已经能读能改了，用不上本地重绘 */
         /* 同源：自动把 iframe 撑成整页高度，去掉内部滚动条，页与页之间直接接续 */
+        /* 这个站设过「顶部留白」：先进它自己的页面把空白撑出来，再量高度，这样一上来那条
+           悬浮工具栏就落在空白上，不会压住第一张图 */
+        var savedPad0 = readSavedPad(host);
+        if (savedPad0 > 0){
+          st.pad = savedPad0;
+          if (padDoc(doc, savedPad0) && inpPad) inpPad.value = savedPad0;
+        }
         var total = docHeight(doc);
         if (total > 200) { st.h = total; st.bot = 0; }
         repaint();
@@ -1400,8 +1703,13 @@ function addOne(inputUrl){
           ? '跨域页面：读不到整页高度，当前 ' + st.h + 'px（' + why + '）。改「高」即可，改完会按域名记住，下次自动套用'
           : '跨域网站读不到内部结构：只能整页隐藏/删除，或用「高 / 上裁 / 下裁」手动裁掉多余区域';
         tiptext.innerHTML += '。这里若一直是白屏，多半是网站禁止被嵌入（X-Frame-Options / CSP）或域名不通：点「↻ 刷新这一页」重试，先用浏览器新窗口打开原址确认能不能访问';
+        tiptext.innerHTML += '。想让它跟同源页一样能测高、能顶部留白、能藏悬浮条，点这一页的「⤵ 本地重绘」（走公共代理取源码在本工具里重画，手机浏览器也能用）';
         btnMgr.style.display = 'none';
         btnSmart.style.display = 'none';
+        /* 跨域：普通打开时读不到、也改不了人家的页面，「顶部留白」这条路走不通；
+           控件留着，点一下会说清楚，想出一样的效果就用同目录的「可读模式」启动器打开本工具 */
+        if (inpPad) { inpPad.value = 0; inpPad.title = '跨域页要用「可读模式」启动器打开本工具，才能在人家页面里留白'; }
+        if (btnPad) { btnPad.title = '跨域页：点一下会说明怎么做；用「可读模式」启动器打开就能直接留白'; }
         /* 跨域读不到内容，判断不出「被禁止嵌入」还是「网慢」，所以不瞎报；
            只有内网 IP/localhost 的 https 打不开时，才自动换 http 再试一次（这类设备基本只认 http） */
         var isLanHost = /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || String(host).toLowerCase() === 'localhost';
