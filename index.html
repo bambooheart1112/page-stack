@@ -193,7 +193,7 @@ body.panelfold .mk{display:none !important}
 
 <div id="panel">
   <div id="panelTop">
-    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v2.5</span></h3>
+    <h3>📑 网页堆叠器 <span id="n">0</span><span class="ver">v2.6</span></h3>
     <span id="traffic" title="统计本次打开页面实际下载的字节（本页 + 同源网页）；跨域网页浏览器不允许读，会标注未计">流量 --</span>
     <button id="btnFold" onclick="foldPanel()">收起 ✕</button>
   </div>
@@ -215,7 +215,7 @@ body.panelfold .mk{display:none !important}
   标签标题会自动换成「第一页的网页名称」：同源页面直接读它的标题，跨域读不到就用域名；删掉第一页会换成新的第一页，全部清空则恢复成「网页堆叠器」<br>
   无缝拼接开启后条目边框/间距/控制条会隐藏；需要删除或裁剪时勾选「显示条目控制条」；网页条目可设「高/上裁/下裁」，「智能裁剪」只对同源页面有效；网页自己贴在顶部/底部的悬浮工具栏（返回、下拉、翻页那一类）会压住图，点「⬆⬇ 让开悬浮条」处理：同源页面直接隐藏它、图一张不少；跨域页面读不到人家的结构，只能上下各让 64px（高自动 +128，可见高度不变），可用「上裁 / 下裁」旁的 −10/+10 微调到刚好；一条都不想把图切掉的话，先点「🎛 让网页可点 6 秒」把网页自己的工具栏收起来，再把上裁/下裁清成 0；设过的站会按域名记住<br>
   <b>顶部留白</b>（同源页专用，另一种处理那条悬浮工具栏的办法）：点「量高度留白」，工具会量出这一页自己那条贴顶工具栏有多高，然后在<b>它自己的页面里</b>上部撑出同样多的空白——那条现在就压着空白、第一张图完整；不想要这块空白，把「上裁」填成同样的数（连条带空白一起跳过，正好切到图的第一行），图还是完整的。留白按域名记住，下次打开这个站自动撑，不用每页手点；<b>跨域页</b>普通打开时读不到人家的页面、这条路走不通（只能上裁/让开），改用同目录的「启动网页堆叠器-可读模式.bat」打开本工具就可以照样留白<br>
-  <b>宽屏渲染</b>（控制条里的「🖥 宽屏渲染」，每页一个开关）：把这一页按网站的桌面宽度约 760px 排版，再整体缩回手机宽度。手机版的顶栏若是死死贴着的悬浮条（还没法收起），桌面版往往就是正常页头、从上面往下排，不压图；图本来就是撑满宽度排的，缩回来视觉宽度差不多。切换后整页高会变（同源会自动重测，跨域要自己调「高」）；不压图之后，用「上裁」把那块页头切掉就行，图一点不少<br>
+  <b>宽屏渲染（逐级调宽，每页一个开关）</b>：点「🖥 宽屏」按 760 → 1000 → 1300 → 1600 → 关 循环，把这一页按更宽的布局排版再整体缩回手机宽。核心作用是让网站那条「死死贴着的悬浮条」变薄：屏幕上看到它多高 = 它自己的高度 ×（屏宽 ÷ 布局宽），760 时约剩一半，1600 时只剩四分之一，挡住的图面积就跟着缩小；图是撑满宽度排的，视觉宽度仍是手机那么宽，图一点不少。切完整页高会变（同源会自动重测，跨域自己调「高」）；不压图之后用「上裁」把那块切掉就行。字会跟着变小，1300 以上只适合看图多的页面<br>
   统一滚动条：每个网页各自实测整页高度（同源可直接读到，结果会显示在「实测整页高」里并填入「高」作为默认值，你可以改）；跨域读不到，需自己填「高」<br>
   <b>上裁微调 + 宽屏开关</b>（在每一项的标题条里、就在「↻ 刷新」左边，浅蓝小框）：<b>上裁 −10 / +10 / +50</b> 和 <b>🖥 宽屏</b>，看到页面顶部就能直接点，不用拉到这一页最下面；点一下立刻生效并记进这个域名。手机屏窄时这一组会自动换到标题条第二行，不会把地址挤没<br>
   黄色提示条默认只占一行（点文字可展开全文），点它左边的 ▾ 就整条收起、左侧只留一个 ▸，再点 ▸ 展开，收起状态会一直记住<br>
@@ -310,14 +310,15 @@ function isImageUrl(url){
 /* ---------- 裁剪相关的小工具（只改尺寸/偏移，不读页面内容，所以跨域也能裁） ---------- */
 function applyCrop(frame, cropEl, st){
   var h = st.h > 0 ? st.h : 800;
-  /* 宽屏渲染：把这一页的布局宽度放大（约 760px，等于网站的桌面宽度），再整体缩回手机宽度。
-     桌面布局的顶栏大多是「站内的正常头部」而不是死死贴着的悬浮条，缩回来以后就不压图了。
+  /* 宽屏渲染：把这一页的布局宽度放大（760 / 1000 / 1300 / 1600 可选），再整体缩回手机宽度。
+     关键：宽度越大，缩回来的比例越小，网站自己那条「死死贴着的悬浮条」在屏幕上就越薄
+     （条高 × 比例），它对图的遮挡面积也就越小；图是撑满宽度排的，视觉宽度始终是手机宽。
      st.z 是所有坐标换算要用的比例（手机点一下 = 页面里 1/z px）。 */
   var z = 1;
-  if (st.wide){
+  if (st.wideW > 0){
     var w = (cropEl && cropEl.clientWidth) || 400;
-    z = Math.min(1, w / 760);            /* 屏幕宽 / 760 = 要缩回多少；屏幕本来就比 760 宽就不缩 */
-    z = Math.max(0.3, Math.round(z * 100) / 100);
+    z = Math.min(1, w / st.wideW);       /* 屏宽 / 布局宽 = 缩回多少；屏本来就比它宽就不缩 */
+    z = Math.max(0.2, Math.round(z * 100) / 100);
   }
   st.z = z;
   if (z < 1){
@@ -638,7 +639,7 @@ function addOne(inputUrl){
       '<button class="mb-tm" title="上裁 −10px，点一下立刻生效">−10</button>' +
       '<button class="mb-tp" title="上裁 +10px，点一下立刻生效：顶上那条看不见了就停手">+10</button>' +
       '<button class="mb-tp5" title="上裁一次 +50px，先把跨域页那条 60 多 px 的工具栏跳过，再用 ±10 微调">+50</button>' +
-      '<button class="mb-wide" title="只改这一页：按网站桌面宽度（约 760px）排版再缩回手机宽，很多站切了以后顶栏就变成正常页头、不压图">🖥 宽屏</button>' +
+      '<button class="mb-wide" title="点一下逐级调宽：760 → 1000 → 1300 → 1600 → 关。页面按更宽的布局排版再缩回手机宽，那条贴顶悬浮条在屏幕上就越薄、遮挡的图越少；图始终是手机宽">🖥 宽屏</button>' +
     '</span>';
 
   var barHtml =
@@ -687,7 +688,7 @@ function addOne(inputUrl){
           '<button class="b-auto">⏫ 自动加高</button>' +
           '<button class="b-float">⬆⬇ 让开悬浮条</button>' +
           '<button class="b-local" title="跨域页专用：走公共代理把这一页的源码取回来，在本工具里本地重绘 → 之后就能量高度、顶部留白、隐藏悬浮条、智能裁剪（手机浏览器也能用）">⤵ 本地重绘</button>' +
-          '<button class="b-wide" title="把这一页按网站的桌面宽度（约 760px）排版，再整体缩回手机宽：很多站的桌面版顶栏是正常页头、不压图；图是撑满宽度排的，缩回来还是手机宽。开关只对这一页有效">🖥 宽屏渲染</button>' +
+          '<button class="b-wide" title="点一下逐级调宽：760 → 1000 → 1300 → 1600 → 关。布局越宽、缩回比例越小，那条贴顶悬浮条在屏幕上就越薄；图始终是手机那么宽">🖥 宽屏渲染</button>' +
           '<button class="b-touch">🎛 让网页可点 6 秒</button>' +
           '<button class="b-warm">全量预热（同源）</button>' +
           '<button class="b-measure">重测高度</button>' +
@@ -802,7 +803,7 @@ function addOne(inputUrl){
     var host = '';
     try { host = (new URL(url)).hostname; } catch (e) { host = ''; }
     var savedH = readSavedH(host);
-    var st = item._crop = { h: savedH || defaultCrossH(), top: 0, bot: 0, pad: 0, wide: false, z: 1 };
+    var st = item._crop = { h: savedH || defaultCrossH(), top: 0, bot: 0, pad: 0, wideW: 0, z: 1 };
 
     function repaint(){
       applyCrop(frame, cropEl, st);
@@ -812,12 +813,12 @@ function addOne(inputUrl){
       if (inpPad) inpPad.value = st.pad || 0;
       if (mbIn && mbIn !== document.activeElement) mbIn.value = st.top || 0;
       if (mbWide){
-        mbWide.className = 'mb-wide' + (st.wide ? ' on' : '');
-        mbWide.textContent = st.wide ? '🖥 退出' : '🖥 宽屏';
+        mbWide.className = 'mb-wide' + (st.wideW > 0 ? ' on' : '');
+        mbWide.textContent = st.wideW > 0 ? ('🖥 ' + st.wideW) : '🖥 宽屏';
       }
       if (btnWide){
-        btnWide.className = 'b-wide' + (st.wide ? ' on' : '');
-        btnWide.textContent = st.wide ? '🖥 退出宽屏' : '🖥 宽屏渲染';
+        btnWide.className = 'b-wide' + (st.wideW > 0 ? ' on' : '');
+        btnWide.textContent = st.wideW > 0 ? ('🖥 宽屏 ' + st.wideW + '（再点更窄）') : '🖥 宽屏渲染';
       }
       if (meas) meas.textContent = st.h + 'px' + (st.cross ? '（估算）' : '') + (imgProgress ? ' · ' + imgProgress : '');
       if (cutTopEl) cutTopEl.style.display = 'none';
@@ -839,7 +840,7 @@ function addOne(inputUrl){
         var its = bx.children;
         for (var i = 0; i < its.length; i++){
           var rp = its[i]._repaint, cp = its[i]._crop;
-          if (rp && cp && cp.wide) { try { rp(); } catch (e) {} }
+          if (rp && cp && cp.wideW > 0) { try { rp(); } catch (e) {} }
         }
       });
     }
@@ -1639,27 +1640,30 @@ function addOne(inputUrl){
       };
     }
 
-    /* ---- 宽屏渲染：按网站桌面宽度（约 760px）排版，再整体缩回手机宽 ----
-       很多站的手机版顶栏是死死贴着的悬浮条（还没法收起），桌面版却是正常页头，
-       一切都从上面往下排、不压图；图是撑满宽度排的，缩回来视觉宽度差不多。 ---- */
+    /* ---- 宽屏渲染（可逐级调宽）：把这一页按更宽的布局排版，再整体缩回手机宽 ------
+       宽度越大 → 缩回比例 z 越小 → 网站那条「死死贴着的悬浮条」在屏幕上越薄
+       （屏幕上的条高 = 条高 × z），对第一张图的遮挡面积跟着变小；图是撑满宽度排的，
+       视觉宽度始终是手机那么宽，所以图一点不少。
+       点一下按 760 → 1000 → 1300 → 1600 → 关 循环，选最薄又不难读的那一档。 ---- */
+    var WIDE_STEPS = [760, 1000, 1300, 1600];
     if (btnWide){
       btnWide.onclick = function(){
-        st.wide = !st.wide;
-        btnWide.className = 'b-wide' + (st.wide ? ' on' : '');
-        btnWide.textContent = st.wide ? '🖥 退出宽屏' : '🖥 宽屏渲染';
+        var i = WIDE_STEPS.indexOf(st.wideW);
+        st.wideW = WIDE_STEPS[(i + 1) % (WIDE_STEPS.length + 1)] || 0;
         repaint();
+        var zz = st.z || 1;
         var d = sameOriginDoc(frame);
         if (d){
           startFit();               /* 布局宽度变了，整页高要重测 */
-          tipbar.className = 'tipbar on' + (tipbar.__folded ? ' fold' : '');
-          tiptext.innerHTML = st.wide
-            ? '宽屏渲染已开：按约 760px 桌面宽度排版再缩回手机宽，正在重测整页高。桌面版顶栏若成了正常页头，它就不压图了，用「上裁」把那块页头切掉即可（图一点不少）'
-            : '已退出宽屏渲染，回到手机版排版；正在重测整页高';
+        }
+        tipbar.className = 'tipbar on' + (tipbar.__folded ? ' fold' : '');
+        if (st.wideW > 0){
+          tiptext.innerHTML = '宽屏 ' + st.wideW + 'px 已开：屏幕上的缩放比例约 ' + Math.round(zz * 100) + '%（条和字都按这个比例变小）。'
+            + '那条贴顶工具条在屏幕上只剩它原高度的 ' + Math.round(zz * 100) + '%，挡住的图就少多了；'
+            + '想更薄就再点一下「🖥 宽屏」（' + WIDE_STEPS.join(' → ') + '），四个都点完就回到手机版。'
+            + (st.wideW >= 1300 ? '字会很小，只适合看图多的页面' : '');
         } else {
-          tipbar.className = 'tipbar on' + (tipbar.__folded ? ' fold' : '');
-          tiptext.innerHTML = st.wide
-            ? '宽屏渲染已开：跨域页读不到整页高，这个数要自己调。先看上面那条顶栏还压不压图——不压了，就按住它的下沿 2 秒，把「按住处」那个数填进「上裁」；高不够就点「+2000 加高」'
-            : '已退出宽屏渲染（跨域页记得把「上裁 / 高」按老样子再调一次）';
+          tiptext.innerHTML = '已关掉宽屏渲染，回到手机版排版' + (d ? '，正在重测整页高' : '（跨域页记得把「上裁 / 高」再对一次）');
         }
       };
     }
